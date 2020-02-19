@@ -1,0 +1,12 @@
+name          toy
+version       0.1.0
+description   shadertoy
+main          js/main.js
+author        monsterkodi@gmx.net
+license       Unlicense
+dependencies
+              electron        ^7.1.10
+              electron-packager  ^14.2.0
+              electron-rebuild  ^1.10.0
+              koffee          ^1.6.0
+              kxk             ^0.375.0
