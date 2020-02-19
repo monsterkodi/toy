@@ -63,6 +63,35 @@ class Effect
             mIcon:    keyboardImage
         @mCreated = true
 
+    #  0000000    0000000   0000000  00000000  000000000  000  0000000    
+    # 000   000  000       000       000          000     000  000   000  
+    # 000000000  0000000   0000000   0000000      000     000  000   000  
+    # 000   000       000       000  000          000     000  000   000  
+    # 000   000  0000000   0000000   00000000     000     000  0000000    
+    
+    bufferID_to_assetID: (id) ->
+        return switch id
+            when 0 then 'bufferA' #'4dXGR8'
+            when 1 then 'bufferB' #'XsXGR8'
+            when 2 then 'bufferC' #'4sXGR8'
+            when 3 then 'bufferD' #'XdfGR8'
+            else
+                klog "bufferID_to_assetID #{id} -> none"
+                'none'
+    
+    assetID_to_bufferID: (id) ->
+        return switch id
+            when 'bufferA' then 0
+            when 'bufferB' then 1
+            when 'bufferC' then 2
+            when 'bufferD' then 3
+            else 
+                klog "assetID_to_bufferID #{id} -> -1"
+                -1
+    
+    assetID_to_cubemapBuferID: (id) -> id != '4dX3Rr' and -1 or 0
+    cubamepBufferID_to_assetID: (id) -> id == 0 and '4dX3Rr' or 'none'
+        
     # 00000000   00000000   0000000  000  0000000  00000000  
     # 000   000  000       000       000     000   000       
     # 0000000    0000000   0000000   000    000    0000000   
@@ -98,12 +127,15 @@ class Effect
         if skipIfNotExists and not @mBuffers[i].mTexture[0]
             return
             
-        klog "resizeBuffer #{i}" @mBuffers[i]
+        # klog "resizeBuffer #{i}" 
         
         oldXres = @mBuffers[i].mResolution[0]
         oldYres = @mBuffers[i].mResolution[1]
         
         if oldXres != xres or oldYres != yres
+            
+            # klog "resizeBuffer #{i}" oldXres, oldYres, @mBuffers[i].mResolution
+            
             needCopy = @mBuffers[i].mTexture[0] != null
             texture1 = @mRenderer.createTexture(Renderer.TEXTYPE.T2D, xres, yres, Renderer.TEXFMT.C4F32, (if needCopy then @mBuffers[i].mTexture[0].mFilter else Renderer.FILTER.NONE), (if needCopy then @mBuffers[i].mTexture[0].mWrap else Renderer.TEXWRP.CLAMP), null)
             texture2 = @mRenderer.createTexture(Renderer.TEXTYPE.T2D, xres, yres, Renderer.TEXFMT.C4F32, (if needCopy then @mBuffers[i].mTexture[1].mFilter else Renderer.FILTER.NONE), (if needCopy then @mBuffers[i].mTexture[1].mWrap else Renderer.TEXWRP.CLAMP), null)
@@ -149,24 +181,9 @@ class Effect
     #    000     000        000 000      000     000   000  000   000  000       
     #    000     00000000  000   000     000      0000000   000   000  00000000  
     
-    getTexture: (passid, slot) ->
-        @mPasses[passid].getTexture slot
-
-    newTexture: (passid, slot, url) ->
-        @mPasses[passid].newTexture slot, url, @mBuffers, @mCubeBuffers, @mKeyboard
-    
-    #  0000000   000   000  000000000  00000000   000   000  000000000   0000000  
-    # 000   000  000   000     000     000   000  000   000     000     000       
-    # 000   000  000   000     000     00000000   000   000     000     0000000   
-    # 000   000  000   000     000     000        000   000     000          000  
-    #  0000000    0000000      000     000         0000000      000     0000000   
-    
-    setOutputs: (passid, slot, url) ->
-        @mPasses[passid].setOutputs slot, url
-    
-    setOutputsByBufferID: (passid, slot, id) ->
-        @mPasses[passid].setOutputsByBufferID slot, id
-        
+    getTexture: (passid, slot) -> @mPasses[passid].getTexture slot
+    newTexture: (passid, slot, url) -> @mPasses[passid].newTexture slot, url, @mBuffers, @mCubeBuffers, @mKeyboard
+            
     # 000   000  00000000  000   000  
     # 000  000   000        000 000   
     # 0000000    0000000     00000    
@@ -250,13 +267,13 @@ class Effect
         for i in [0...num] # render buffers second
             if @mPasses[i].mType != 'buffer' then continue
             if @mPasses[i].mProgram == null  then continue
-            bufferID = assetID_to_bufferID(@mPasses[i].mOutputs[0])
+            bufferID = @assetID_to_bufferID @mPasses[i].mOutput
 
             needMipMaps = false # check if any downstream pass needs mipmaps
             for j in [0...num]
                 for k in [0...@mPasses[j].mInputs.length]
                     inp = @mPasses[j].mInputs[k]
-                    if inp != null and inp.mInfo.mType == 'buffer' and inp.id == bufferID and inp.mInfo.mSampler.filter == 'mipmap'
+                    if inp != null and inp.mInfo.mType == 'buffer' and inp.id == bufferID and inp.mInfo.mSampler?.filter == 'mipmap'
                         needMipMaps = true
                         break
             @mPasses[i].paint da, time, dtime, fps, xres, yres, isPaused, bufferID, needMipMaps, @mBuffers, @mCubeBuffers, @mKeyboard, @
@@ -271,7 +288,7 @@ class Effect
                 for k in [0...@mPasses[j].mInputs.length]
                     inp = @mPasses[j].mInputs[k]
                     if inp != null and inp.mInfo.mType == 'cubemap'
-                        if assetID_to_cubemapBuferID(inp.mInfo.mID) == 0 and inp.mInfo.mSampler.filter == 'mipmap'
+                        if @assetID_to_cubemapBuferID(inp.mInfo.mID) == 0 and inp.mInfo.mSampler.filter == 'mipmap'
                             needMipMaps = true
                             break
             @mPasses[i].paint da, time, dtime, fps, xres, yres, isPaused, bufferID, needMipMaps, @mBuffers, @mCubeBuffers, @mKeyboard, @
@@ -348,8 +365,7 @@ class Effect
             
             rpass = passes[j]
             
-            rpass.inputs  ?= []
-            rpass.outputs ?= []
+            rpass.inputs ?= []
             
             @mPasses[j] = new Pass @mRenderer, j, @
             
@@ -364,18 +380,12 @@ class Effect
                     mSampler:   rpass.inputs[i].sampler
                 , @mBuffers, @mCubeBuffers, @mKeyboard
 
-            for i in [0..3]
-                @mPasses[j].setOutputs i, null
-                
-            for i in [0...rpass.outputs.length]
-                outputID = rpass.outputs[i].id
-                outputCH = rpass.outputs[i].channel
-                @mPasses[j].setOutputs outputCH, outputID
+            @mPasses[j].mOutput = rpass.output if rpass.output
 
             rpassName = switch rpass.type
                 when 'common'  then 'Common'
                 when 'image'   then 'Image'
-                when 'buffer'  then 'Buffer ' + String.fromCharCode(65 + assetID_to_bufferID(@mPasses[j].mOutputs[0]))
+                when 'buffer'  then 'Buffer ' + String.fromCharCode(65 + @assetID_to_bufferID(@mPasses[j].mOutput))
                 when 'cubemap' then 'Cube'
             @mPasses[j].create rpass.type, rpassName
             

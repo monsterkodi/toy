@@ -310,9 +310,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     
     lookAtFrom(load2(0,1).xyz, load2(0,2).xyz);
 
-    #ifndef TOY
-    if (space) lookAtFrom(iCenter, iCamera);
-    #endif
+    // #ifndef TOY
+    // if (space) lookAtFrom(iCenter, iCamera);
+    // #endif
     
     gl.uv = (2.0*fragCoord-iResolution.xy)/iResolution.y;
     vec3 rd = normalize(gl.uv.x*cam.x + gl.uv.y*cam.up + cam.fov*cam.dir);

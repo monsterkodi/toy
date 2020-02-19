@@ -773,7 +773,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     vec2 uv = (fragCoord-.5*iResolution.xy)/iResolution.y;
     vec3 ct;
     
-    #ifdef TOY
+    //#ifdef TOY
     	ct = vec0;
     	float my = -2.0*(iMouse.y/iResolution.y-0.5);
     	float mx = -2.0*(iMouse.x/iResolution.x-0.5);
@@ -791,12 +791,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         }
     
     	camPos = rotAxisAngle(rotAxisAngle(vec3(0,0,md), vec3(1,0,0), 20.0+30.0*my), vec3(0,1,0), 90.0*mx);
-    #else
-        ct = iCenter; 
-    	camPos = iCamera;
-        camPos.x *= -1.0; 
-    	ct.x *= -1.0;
-    #endif
+    // #else
+        // ct = iCenter; 
+        // camPos = iCamera;
+        // camPos.x *= -1.0; 
+        // ct.x *= -1.0;
+    // #endif
 
     if (true) poseDancing();
     else      poseNeutral();

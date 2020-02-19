@@ -6,7 +6,7 @@
    000      0000000      000     
 ###
 
-{ slash } = require 'kxk'
+{ empty, klog, slash } = require 'kxk'
 
 Renderer = require './renderer'
 Effect   = require './effect'
@@ -28,7 +28,6 @@ class Toy
     
         devicePixelRatio = window.devicePixelRatio or 1
     
-        # @mCanvas.tabIndex = '0'
         @mCanvas.width  = @mCanvas.offsetWidth * devicePixelRatio
         @mCanvas.height = @mCanvas.offsetHeight * devicePixelRatio
     
@@ -40,21 +39,32 @@ class Toy
         @mGLContext = Renderer.createGlContext @mCanvas
         
         if not @mGLContext
-            log 'no gl context'
+            error 'no gl context'
     
         @mErrors = new Array()
         
         @mEffect = new Effect @mGLContext, @mCanvas.width, @mCanvas.height
         if not @mEffect.mCreated
-            log 'no effect'
+            error 'no effect'
             return
     
         @mCanvas.addEventListener 'webglcontextlost' (event) ->
-            log 'webglcontextlost'
+            error 'webgl context lost'
             event.preventDefault()
         
         # @loadNew()
-        @load main:'gloworm' common:'gloworm/common'
+        # @load 'gloworm'
+        # @load 'eyeboids'
+        # @load 'snowmobile'
+        # @load 'kalamari'
+        # @load 'veyerus'
+        # @load 'hexisle'
+        # @load 'voronoy'
+        # @load 'krap'
+        # @load 'kerl'
+        # @load 'army'
+        # @load 'boids'
+        @load 'astro'
 
     # 00000000   00000000  000   000  0000000    00000000  00000000   
     # 000   000  000       0000  000  000   000  000       000   000  
@@ -170,7 +180,6 @@ class Toy
     loadNew: ->
         @loadPasses [{
             inputs:  []
-            outputs: [ {channel:0, id:'default' } ]
             type:    'image'
             code: """
                 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -206,42 +215,57 @@ class Toy
     # 000      000   000  000   000  000   000  
     # 0000000   0000000   000   000  0000000    
     
-    load: (main:, common:, buffer:, keyboard:true, font:true) ->
+    load: (dir) ->
+        shaderDir = slash.resolve "#{__dirname}/../shader/#{dir}"
+        imageFile = "#{shaderDir}/image.frag"
+        return if not slash.fileExists imageFile
+        shader = image:imageFile
+        for file in ['common' 'buffer']
+            if slash.fileExists "#{shaderDir}/#{file}.frag"
+                shader[file] = "#{shaderDir}/#{file}.frag"
+                
+        klog 'loading shader dir' shader
+        @loadShader shader
+    
+    loadShader: (image:, common:, buffer:, keyboard:true, font:true) ->
         
         passes = []
         
+        imageCode = slash.readText image
+        if empty imageCode
+            return error "no image code in #{image}?"
+        
         passes.push
-            type:  'image'
-            code:  slash.readText "#{__dirname}/../shader/#{main}.frag"
-            inputs:  [ {channel:0 id:0 type:'keyboard'}, {channel:1 id:'bufferA' type:'buffer'}, 
-                {channel:2 id:2 type:'texture' src:slash.fileUrl "../img/font.png"} ]
-            outputs: [ {channel:0, id:main } ]
+            type:    'image'
+            code:    imageCode
+            inputs:  []
             
         if common
             passes.push
                 type: 'common'
-                code: slash.readText "#{__dirname}/../shader/#{common}.frag"
+                code: slash.readText common
             
         if keyboard
+            passes[0].inputs.push channel:0 id:0 type:'keyboard'
             passes.push 
                 type: 'image'
-                outputs: [channel:0]
                 url: mType: 'keyboard'
+                
+        if buffer
+            passes[0].inputs.push channel:1 id:'bufferA' type:'buffer'
+            passes.push
+                type:   'buffer'
+                output: 'bufferA'
+                code:  slash.readText buffer
+                
         if font
+            passes[0].inputs.push channel:2 id:2 type:'texture' src:slash.fileUrl "../img/font.png"
             passes.push 
                 type:  'image'
-                outputs: [channel:2]
                 url:
                     type: 'texture'
                     src:  slash.fileUrl "../img/font.png"
-
-        if buffer
-            passes.push
-                type:  'buffer'
-                outputs: [channel:1]
-                code:  slash.readText "../shader/#{buffer}.frag"
                 
-            
         @loadPasses passes
         
     module.exports = Toy

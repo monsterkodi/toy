@@ -269,9 +269,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     if (iMouse.z > 0.0)
         lookAtFrom(vec3(0.5*0.25,-0.5*0.25,0), rotAxisAngle(vec3(0,3.0,CAM_DIST-2.5*gl.mp.y), vy, gl.mp.x*90.0));
         
-    #ifndef TOY
-    if (space) lookAtFrom(iCenter, iCamera);
-    #endif
+    // #ifndef TOY
+    // if (space) lookAtFrom(iCenter, iCamera);
+    // #endif
     
     gl.uv = (2.0*fragCoord-iResolution.xy)/iResolution.y;
     vec3 rd = normalize(gl.uv.x*cam.x + gl.uv.y*cam.up + cam.fov*cam.dir);

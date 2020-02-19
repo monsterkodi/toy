@@ -4,6 +4,8 @@
 #
 #==============================================================================
 
+{ filter, fs } = require 'kxk'
+    
 class Renderer 
     
     @: (@mGL) ->
@@ -358,6 +360,33 @@ class Renderer
             @mGL.bindTexture @mGL.TEXTURE_3D, null
         te.mWrap = wrap
 
+    setSamplerVFlip: (te, vflip, image) ->
+
+        return if te.mVFlip == vflip
+        id = te.mObjectID
+        if te.mType == Renderer.TEXTYPE.T2D
+            if image != null
+                @mGL.activeTexture @mGL.TEXTURE0
+                @mGL.bindTexture @mGL.TEXTURE_2D, id
+                @mGL.pixelStorei @mGL.UNPACK_FLIP_Y_WEBGL, vflip
+                glFoTy = @iFormatPI2GL(te.mFormat)
+                @mGL.texImage2D @mGL.TEXTURE_2D, 0, glFoTy.mGLFormat, glFoTy.mGLExternal, glFoTy.mGLType, image
+                @mGL.bindTexture @mGL.TEXTURE_2D, null
+        else if te.mType == Renderer.TEXTYPE.CUBEMAP
+            if image != null
+                glFoTy = @iFormatPI2GL(te.mFormat)
+                @mGL.activeTexture @mGL.TEXTURE0
+                @mGL.bindTexture @mGL.TEXTURE_CUBE_MAP, id
+                @mGL.pixelStorei @mGL.UNPACK_FLIP_Y_WEBGL, vflip
+                @mGL.texImage2D @mGL.TEXTURE_CUBE_MAP_POSITIVE_X, 0, glFoTy.mGLFormat, glFoTy.mGLExternal, glFoTy.mGLType, image[0]
+                @mGL.texImage2D @mGL.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, glFoTy.mGLFormat, glFoTy.mGLExternal, glFoTy.mGLType, image[1]
+                @mGL.texImage2D @mGL.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, glFoTy.mGLFormat, glFoTy.mGLExternal, glFoTy.mGLType, if vflip then image[3] else image[2]
+                @mGL.texImage2D @mGL.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, glFoTy.mGLFormat, glFoTy.mGLExternal, glFoTy.mGLType, if vflip then image[2] else image[3]
+                @mGL.texImage2D @mGL.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, glFoTy.mGLFormat, glFoTy.mGLExternal, glFoTy.mGLType, image[4]
+                @mGL.texImage2D @mGL.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, glFoTy.mGLFormat, glFoTy.mGLExternal, glFoTy.mGLType, image[5]
+                @mGL.bindTexture @mGL.TEXTURE_CUBE_MAP, null
+        te.mVFlip = vflip
+        
     createMipmaps: (te) ->
         if te.mType == Renderer.TEXTYPE.T2D
             @mGL.activeTexture @mGL.TEXTURE0
@@ -606,7 +635,7 @@ class Renderer
 
     detachShader: -> @mGL.useProgram null
 
-    destroyShader: (tex) -> @mGL.deleteProgram tex.mProgram
+    destroyShader: (program) -> @mGL.deleteProgram program
 
     getAttribLocation: (shader, name) ->
         @mGL.getAttribLocation shader.mProgram, name

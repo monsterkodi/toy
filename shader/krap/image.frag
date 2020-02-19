@@ -628,7 +628,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     camTgt = vec3(0,1.2,0); 
 
     camPos = rotAxisAngle(rotAxisAngle(vec3(0,0,md), vx, 89.0*my), vy, -180.0*mx);
-    
+    /*
     #ifndef TOY
         if (space)
         {
@@ -638,7 +638,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             camTgt.x *= -1.0;
         }
     #endif
-    
+    */
     camDir = normalize(camTgt-camPos);
     
     if (animat) { anim(); }

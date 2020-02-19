@@ -71,7 +71,7 @@ class MainWin extends win
     # 000   000   0000000    0000000   0000000   00000000  
 
     mousePos: (event) ->
-        br   = @toy.mCanvas.getBoundingClientRect()
+        br = $('#toy').getBoundingClientRect()
         [event.clientX-br.left, event.clientY-br.top]
     
     onMouseDown: (event) => @mouse.down = @mousePos(event); @mouseEvent event
@@ -79,7 +79,7 @@ class MainWin extends win
     onMouseUp:   (event) => @mouse.up = @mousePos(event); @mouseEvent event
         
     mouseEvent: (event) -> 
-        
+        return if not @toy
         pos = @mousePos(event)
         rfc = [window.devicePixelRatio ? 1, window.devicePixelRatio ? @iResolution.y]
         hgt = @toy.mCanvas.height

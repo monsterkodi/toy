@@ -1,4 +1,4 @@
-// #define TOY
+#define TOY
 #define PI   3.141592653589
 #define TAU  6.283185307178
 #define E    2.718281828459
@@ -37,7 +37,7 @@ const vec3 blue  = vec3(0.2,0.2,1.0);
 const vec3 white = vec3(1.0,1.0,1.0);
 const vec3 black = vec3(0.0,0.0,0.0);
 
-#define sdMat(m,d)  if (d < sdf.dist) { sdf.dist = d; sdf.mat = m; }
+#define sdMat(m,d)  if (d < gl.sdf.dist) { gl.sdf.dist = d; gl.sdf.mat = m; }
     
 //  0000000   000       0000000   0000000     0000000   000      
 // 000        000      000   000  000   000  000   000  000      
@@ -453,7 +453,8 @@ float opDiff(float d1, float d2, float k)
 }
 
 float opInter(float d1, float d2, float k) 
-{    
+{
+    
     float h = clamp(0.5 - 0.5*(d2-d1)/k, 0.0, 1.0);
     return mix(d2, d1, h) + k*h*(1.0-h);
 }
@@ -470,12 +471,12 @@ float opInter(float d1, float d2) { return opInter(d1, d2, 0.2); }
 
 float sdSphere(vec3 a, float r)
 {
-    return length(sdf.pos-a)-r;
+    return length(gl.sdf.pos-a)-r;
 }
 
 float sdPill(vec3 a, float r, vec3 n)
 {
-    vec3 p = sdf.pos-a;
+    vec3 p = gl.sdf.pos-a;
     float d = abs(dot(normalize(n),normalize(p)));
     float f = smoothstep(0.0, 1.3, d);
     return length(p) - r + f * length(n);
@@ -483,23 +484,23 @@ float sdPill(vec3 a, float r, vec3 n)
 
 float sdPlane(vec3 a, vec3 n)
 {   
-    return dot(n, sdf.pos-a);
+    return dot(n, gl.sdf.pos-a);
 }
 
 float sdPlane(vec3 n)
 {   
-    return dot(n, sdf.pos);
+    return dot(n, gl.sdf.pos);
 }
 
 float sdBox(vec3 a, vec3 b, float r)
 {
-  vec3 q = abs(sdf.pos-a)-b;
+  vec3 q = abs(gl.sdf.pos-a)-b;
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
 }
 
 float sdEllipsoid(vec3 a, vec3 r)
 {
-    vec3 p = sdf.pos-a;
+    vec3 p = gl.sdf.pos-a;
     float k0 = length(p/r);
     float k1 = length(p/(r*r));
     return k0*(k0-1.0)/k1;
@@ -508,33 +509,33 @@ float sdEllipsoid(vec3 a, vec3 r)
 float sdCone(vec3 a, vec3 b, float r1, float r2)
 {
     vec3 ab = b-a;
-    vec3 ap = sdf.pos-a;
+    vec3 ap = gl.sdf.pos-a;
     float t = dot(ab,ap) / dot(ab,ab);
     t = clamp(t, 0.0, 1.0);
     vec3 c = a + t*ab;
-    return length(sdf.pos-c)-(t*r2+(1.0-t)*r1);      
+    return length(gl.sdf.pos-c)-(t*r2+(1.0-t)*r1);      
 }
 
 float sdLine(vec3 a, vec3 n, float r)
 {
-    vec3 p = sdf.pos-a;
+    vec3 p = gl.sdf.pos-a;
     return length(p-n*dot(p,n))-r;
 }
 
 float sdCapsule(vec3 a, vec3 b, float r)
 {
     vec3 ab = b-a;
-    vec3 ap = sdf.pos-a;
+    vec3 ap = gl.sdf.pos-a;
     float t = dot(ab,ap) / dot(ab,ab);
     t = clamp(t, 0.0, 1.0);
     vec3 c = a + t*ab;
-    return length(sdf.pos-c)-r;        
+    return length(gl.sdf.pos-c)-r;        
 }
 
 float sdCylinder(vec3 a, vec3 b, float r, float cr)
 {
   vec3  ba = b - a;
-  vec3  pa = sdf.pos - a;
+  vec3  pa = gl.sdf.pos - a;
   float baba = dot(ba,ba);
   float paba = dot(pa,ba);
   float x = length(pa*baba-ba*paba) - r*baba;
@@ -596,7 +597,6 @@ void lookAtFrom(vec3 tgt, vec3 pos)
 }
 void lookAt  (vec3 tgt) { lookAtFrom(tgt, cam.pos); }
 void lookFrom(vec3 pos) { lookAtFrom(cam.tgt, pos); }
-void lookPan (vec3 off) { lookAtFrom(cam.tgt+off, pos+off); }
 
 void initCam(float dist, vec2 rot)
 {

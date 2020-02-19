@@ -14,36 +14,13 @@ class Pass
     @: (@mRenderer, @mID, @mEffect) ->
         
         @mInputs  = [ null null null null ]
-        @mOutputs = [ null null null null ]
+        @mOutput  = null
         @mSource  = null
         @mType    = 'image'
         @mName    = 'none'
         @mCompile = 0
         @mFrame   = 0
-        
-    bufferID_to_assetID: (id) ->
-        return switch id
-            when 0 then 'bufferA' #'4dXGR8'
-            when 1 then 'bufferB' #'XsXGR8'
-            when 2 then 'bufferC' #'4sXGR8'
-            when 3 then 'bufferD' #'XdfGR8'
-            else
-                klog "bufferID_to_assetID #{id} -> none"
-                'none'
-    
-    assetID_to_bufferID: (id) ->
-        return switch id
-            when 'bufferA' then 0
-            when 'bufferB' then 1
-            when 'bufferC' then 2
-            when 'bufferD' then 3
-            else 
-                klog "assetID_to_bufferID #{id} -> -1"
-                -1
-    
-    assetID_to_cubemapBuferID: (id) -> id != '4dX3Rr' and -1 or 0
-    cubamepBufferID_to_assetID: (id) -> id == 0 and '4dX3Rr' or 'none'
-        
+                
     # 000   000  00000000   0000000   0000000    00000000  00000000   
     # 000   000  000       000   000  000   000  000       000   000  
     # 000000000  0000000   000000000  000   000  0000000   0000000    
@@ -80,7 +57,7 @@ class Pass
             };
             uniform Channel iChannel[4];
             
-            void mainImage( out vec4 c,  in vec2 f );
+            void mainImage(out vec4 c, in vec2 f);
             """
                         
         @footer = """
@@ -97,7 +74,7 @@ class Pass
     makeHeaderBuffer: ->
         
         @header  = @commonHeader()
-        @header += 'void mainImage( out vec4 c,  in vec2 f );\n'
+        @header += 'void mainImage(out vec4 c, in vec2 f);\n'
         
         @footer = """
             out vec4 outColor;
@@ -169,13 +146,13 @@ class Pass
         timeStart = performance.now()
         res = null
         if @mType == 'image'
-            res = @newShaderImage(shaderCode, commonSourceCodes)
+            res = @newShaderImage shaderCode, commonSourceCodes
         else if @mType == 'buffer'
-            res = @newShaderImage(shaderCode, commonSourceCodes)
+            res = @newShaderImage shaderCode, commonSourceCodes
         else if @mType == 'common'
-            res = @newShaderCommon(shaderCode)
+            res = @newShaderCommon shaderCode
         else if @mType == 'cubemap'
-            res = @newShaderCubemap(shaderCode, commonSourceCodes)
+            res = @newShaderCubemap shaderCode, commonSourceCodes
         else if @mType == 'keyboard'
             res = null
         else
@@ -193,13 +170,13 @@ class Pass
     
     newShaderImage: (shaderCode, commonShaderCodes) ->
         
-        vsSource = 'layout(location = 0) in vec2 pos; void main() { gl_Position = vec4(pos.xy,0.0,1.0); }'
-        fsSource = @header
+        vs = 'layout(location = 0) in vec2 pos; void main() { gl_Position = vec4(pos.xy,0.0,1.0); }'
+        fr = @header
         for i in [0...commonShaderCodes.length]
-            fsSource += '\n' + commonShaderCodes[i] + '\n'
-        fsSource += shaderCode
-        fsSource += @footer
-        res = @mRenderer.createShader(vsSource, fsSource)
+            fr += '\n' + commonShaderCodes[i]
+        fr += '\n' + shaderCode
+        fr += '\n' + @footer
+        res = @mRenderer.createShader vs, fr
         if res.mResult == false
             return res.mInfo
         if @mProgram != null
@@ -215,15 +192,15 @@ class Pass
     
     newShaderCubemap: (shaderCode, commonShaderCodes) ->
         
-        vsSource = 'layout(location = 0) in vec2 pos; void main() { gl_Position = vec4(pos.xy,0.0,1.0); }'
-        fsSource = @header
+        vs = 'layout(location = 0) in vec2 pos; void main() { gl_Position = vec4(pos.xy,0.0,1.0); }'
+        fr = @header
         i = 0
         while i < commonShaderCodes.length
-            fsSource += commonShaderCodes[i] + '\n'
+            fr += commonShaderCodes[i] + '\n'
             i++
-        fsSource += shaderCode
-        fsSource += @footer
-        res = @mRenderer.createShader(vsSource, fsSource)
+        fr += shaderCode
+        fr += @footer
+        res = @mRenderer.createShader(vs, fr)
         if res.mResult == false
             return res.mInfo
         if @mProgram != null
@@ -239,9 +216,9 @@ class Pass
     
     newShaderCommon: (shaderCode) ->
         
-        vsSource = 'layout(location = 0) in vec2 pos; void main() { gl_Position = vec4(pos.xy,0.0,1.0); }'
-        fsSource = @header + shaderCode + @footer
-        res = @mRenderer.createShader(vsSource, fsSource)
+        vs = 'layout(location = 0) in vec2 pos; void main() { gl_Position = vec4(pos.xy,0.0,1.0); }'
+        fr = @header + shaderCode + @footer
+        res = @mRenderer.createShader(vs, fr)
         if res.mResult == false
             return res.mInfo
         if @mProgram != null
@@ -283,22 +260,16 @@ class Pass
         else if inp.mInfo.mType == 'texture'
             if inp.loaded
                 @mRenderer.setSamplerFilter inp.globject, filter, true
-                # inp.mInfo.mSampler.filter = str
         else if inp.mInfo.mType == 'cubemap'
             if inp.loaded
-                if assetID_to_cubemapBuferID(inp.mInfo.mID) == 0
+                if @mEffect.assetID_to_cubemapBuferID(inp.mInfo.mID) == 0
                     @mRenderer.setSamplerFilter cubeBuffers[id].mTexture[0], filter, true
                     @mRenderer.setSamplerFilter cubeBuffers[id].mTexture[1], filter, true
-                    # inp.mInfo.mSampler.filter = str
                 else
                     @mRenderer.setSamplerFilter inp.globject, filter, true
-                    # inp.mInfo.mSampler.filter = str
         else if inp.mInfo.mType == 'buffer'
             @mRenderer.setSamplerFilter buffers[inp.id].mTexture[0], filter, true
             @mRenderer.setSamplerFilter buffers[inp.id].mTexture[1], filter, true
-            # inp.mInfo.mSampler.filter = str
-        # else if inp.mInfo.mType == 'keyboard'
-            # inp.mInfo.mSampler.filter = str
     
     # 000   000  00000000    0000000   00000000   
     # 000 0 000  000   000  000   000  000   000  
@@ -315,27 +286,20 @@ class Pass
         if inp?.mInfo.mType == 'texture'
             if inp.loaded
                 @mRenderer.setSamplerWrap inp.globject, restr
-                # inp.mInfo.mSampler.wrap = str
         else if inp?.mInfo.mType == 'cubemap'
             if inp.loaded
                 @mRenderer.setSamplerWrap inp.globject, restr
-                # inp.mInfo.mSampler.wrap = str
         else if inp?.mInfo.mType == 'buffer'
             @mRenderer.setSamplerWrap buffers[inp.id].mTexture[0], restr
             @mRenderer.setSamplerWrap buffers[inp.id].mTexture[1], restr
-            # inp.mInfo.mSampler.wrap = str
     
+    setSamplerVFlip: (id, flip) ->
+
+        inp = @mInputs[id]
+        if inp?.loaded and inp?.mInfo.mType in ['texture' 'cubemap']
+            @mRenderer.setSamplerVFlip inp.globject, flip, inp.image
+            
     getTexture: (slot) -> @mInputs[slot]?.mInfo
-    
-    setOutputs: (slot, id) -> @mOutputs[slot] = id
-    
-    setOutputsByBufferID: (slot, id) ->
-        if @mType == 'buffer'
-            @mOutputs[slot] = @bufferID_to_assetID(id)
-            @mEffect.resizeBuffer id, @mEffect.mXres, @mEffect.mYres, false
-        else if @mType == 'cubemap'
-            @mOutputs[slot] = @cubamepBufferID_to_assetID(id)
-            @mEffect.resizeCubemapBuffer id, 1024, 1024
     
     # 000000000  00000000  000   000  000000000  000   000  00000000   00000000  
     #    000     000        000 000      000     000   000  000   000  000       
@@ -344,8 +308,6 @@ class Pass
     #    000     00000000  000   000     000      0000000   000   000  00000000  
     
     newTexture: (slot, url, buffers, cubeBuffers, keyboard) ->
-        
-        klog "newTexture #{slot}" url
         
         texture = null
         
@@ -358,6 +320,7 @@ class Pass
                 mNeedsShaderCompile: false
                 
         else if url.mType == 'texture'
+            # klog "newTexture 'texture' #{slot}" url
             texture = {}
             texture.mInfo = url
             texture.globject = null
@@ -366,17 +329,13 @@ class Pass
             texture.image.crossOrigin = ''
     
             texture.image.onload = =>
-                klog 'onload'
                 rti = @sampler2Renderer url.mSampler
-                # O.M.G. IQIQ FIX THIS
-                channels = Renderer.TEXFMT.C4I8
-                if url.mID == 'Xdf3zn' or url.mID == '4sf3Rn' or url.mID == '4dXGzn' or url.mID == '4sf3Rr'
-                    channels = Renderer.TEXFMT.C1I8
-                texture.globject = @mRenderer.createTextureFromImage(Renderer.TEXTYPE.T2D, texture.image, channels, rti.mFilter, rti.mWrap)
+                texture.globject = @mRenderer.createTextureFromImage Renderer.TEXTYPE.T2D, texture.image, Renderer.TEXFMT.C4I8, rti.mFilter, rti.mWrap
                 texture.loaded = true
+                @setSamplerVFlip slot, true
                 return
     
-            klog "texture.image.src #{url.mSrc}"
+            # klog "texture.image.src #{url.mSrc}"
                 
             texture.image.src = url.mSrc
             returnValue = 
@@ -384,6 +343,7 @@ class Pass
                 mNeedsShaderCompile: @mInputs[slot] == null or @mInputs[slot].mInfo.mType != 'texture' and @mInputs[slot].mInfo.mType != 'keyboard'
             @destroyInput slot
             @mInputs[slot] = texture
+            
             @makeHeader()
             return returnValue
             
@@ -394,7 +354,7 @@ class Pass
             texture.loaded = false
             rti = @sampler2Renderer url.mSampler
             
-            if assetID_to_cubemapBuferID(url.mID) != -1
+            if @mEffect.assetID_to_cubemapBuferID(url.mID) != -1
                 texture.mImage = new Image
     
                 texture.mImage.onload = ->
@@ -454,11 +414,12 @@ class Pass
             return returnValue
             
         else if url.mType == 'buffer'
+            klog "newTexture 'buffer' #{slot}" url
             texture = {}
             texture.mInfo = url
             texture.image = new Image
             texture.image.src = url.mSrc
-            texture.id = @assetID_to_bufferID(url.mID)
+            texture.id = @mEffect.assetID_to_bufferID(url.mID)
             texture.loaded = true
             returnValue = 
                 mFailed: false
@@ -468,8 +429,7 @@ class Pass
             @mEffect.resizeBuffer texture.id, @mEffect.mXres, @mEffect.mYres, false
 
             @setSamplerFilter slot, 'linear' buffers, cubeBuffers, true
-            # @setSamplerVFlip slot, url.mSampler.vflip
-            # @setSamplerWrap slot, url.mSampler.wrap, buffers
+            @setSamplerVFlip slot, true
             @setSamplerWrap slot, 'clamp' buffers
             @makeHeader()
             return returnValue
@@ -508,7 +468,7 @@ class Pass
                 texID[i] = keyboard.mTexture
             else if inp.mInfo.mType == 'cubemap'
                 if inp.loaded == true
-                    id = assetID_to_cubemapBuferID(inp.mInfo.mID)
+                    id = @mEffect.assetID_to_cubemapBuferID(inp.mInfo.mID)
                     if id != -1
                         texID[i] = cubeBuffers[id].mTexture[cubeBuffers[id].mLastRenderDone]
                         resos[3 * i + 0] = cubeBuffers[id].mResolution[0]
@@ -584,7 +544,7 @@ class Pass
                 texID[i] = keyboard.mTexture
             else if inp?.mInfo.mType == 'cubemap'
                 if inp.loaded == true
-                    id = assetID_to_cubemapBuferID(inp.mInfo.mID)
+                    id = @mEffect.assetID_to_cubemapBuferID(inp.mInfo.mID)
                     if id != -1
                         texID[i] = cubeBuffers[id].mTexture[cubeBuffers[id].mLastRenderDone]
                         resos[3 * i + 0] = cubeBuffers[id].mResolution[0]

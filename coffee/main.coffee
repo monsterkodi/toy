@@ -6,15 +6,18 @@
 000   000  000   000  000  000   000
 ###
 
-{ app, args } = require 'kxk'
+{ app, args, slash } = require 'kxk'
 
 class Main extends app
 
     @: ->
         
+        dirs = ["#{__dirname}/../shader"]
+        dirs = dirs.concat slash.list(dirs[0], type:'dir').filter((p) -> p.type=='dir').map (d) -> d.file
+        
         super
             dir:            __dirname
-            dirs:           ['../shader']
+            dirs:           dirs
             pkg:            require '../package.json'
             index:          'index.html'
             icon:           '../img/app.ico'
