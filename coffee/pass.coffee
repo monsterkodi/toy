@@ -141,26 +141,26 @@ class Pass
     # 0000000   000   000  000   000  0000000    00000000  000   000  
     
     newShader: (shaderCode, commonSourceCodes) ->
-        if @mRenderer == null
-            return null
+        return if not @mRenderer
+            
         timeStart = performance.now()
-        res = null
-        if @mType == 'image'
-            res = @newShaderImage shaderCode, commonSourceCodes
-        else if @mType == 'buffer'
-            res = @newShaderImage shaderCode, commonSourceCodes
-        else if @mType == 'common'
-            res = @newShaderCommon shaderCode
-        else if @mType == 'cubemap'
-            res = @newShaderCubemap shaderCode, commonSourceCodes
-        else if @mType == 'keyboard'
-            res = null
-        else
-            error "unknown type #{@mType}"
-        if res == null
+
+        switch @mType
+            when 'image' 'buffer'
+                err = @newShaderImage shaderCode, commonSourceCodes
+            when 'common'
+                err = @newShaderCommon shaderCode
+            when 'cubemap'
+                err = @newShaderCubemap shaderCode, commonSourceCodes
+            when 'keyboard'
+                err = null
+            else
+                err = "unknown type #{@mType}"
+                error err
+        if not err
             @mCompile = performance.now() - timeStart
         @mSource = shaderCode
-        res
+        err
     
     # 000  00     00   0000000    0000000   00000000  
     # 000  000   000  000   000  000        000       
@@ -414,24 +414,29 @@ class Pass
             return returnValue
             
         else if url.mType == 'buffer'
-            klog "newTexture 'buffer' #{slot}" url
             texture = {}
             texture.mInfo = url
             texture.image = new Image
             texture.image.src = url.mSrc
             texture.id = @mEffect.assetID_to_bufferID(url.mID)
+            klog "newTexture 'buffer' #{slot}" url, texture.id
             texture.loaded = true
             returnValue = 
                 mFailed: false
                 mNeedsShaderCompile: @mInputs[slot] == null or @mInputs[slot].mInfo.mType != 'texture' and @mInputs[slot].mInfo.mType != 'keyboard'
+                
+            klog "newTexture 'buffer' #{slot}" returnValue
             @destroyInput slot
             @mInputs[slot] = texture
             @mEffect.resizeBuffer texture.id, @mEffect.mXres, @mEffect.mYres, false
 
-            @setSamplerFilter slot, 'linear' buffers, cubeBuffers, true
-            @setSamplerVFlip slot, true
-            @setSamplerWrap slot, 'clamp' buffers
+            # @setSamplerFilter slot, 'linear' buffers, cubeBuffers, true
+            # @setSamplerVFlip slot, true
+            # @setSamplerWrap slot, 'clamp' buffers
             @makeHeader()
+            
+            # klog "newTexture 'buffer' #{slot}" @header, @footer
+            
             return returnValue
             
         error "input type error: #{url.mType}"
@@ -501,14 +506,18 @@ class Pass
         @mRenderer.setShaderConstant1I  'iFrame' @mFrame
         @mRenderer.setShaderConstant1F  'iTimeDelta' dtime
         @mRenderer.setShaderConstant1F  'iFrameRate' fps
+        @mRenderer.setShaderConstant1FV 'iChannelTime' times
+        @mRenderer.setShaderConstant3FV 'iChannelResolution' resos
+        ###
         @mRenderer.setShaderConstant1F  'iChannel[0].time' times[0]
         @mRenderer.setShaderConstant1F  'iChannel[1].time' times[1]
         @mRenderer.setShaderConstant1F  'iChannel[2].time' times[2]
         @mRenderer.setShaderConstant1F  'iChannel[3].time' times[3]
-        @mRenderer.setShaderConstant3F  'iChannel[0].resolution' resos[0], resos[1], resos[2]
-        @mRenderer.setShaderConstant3F  'iChannel[1].resolution' resos[3], resos[4], resos[5]
-        @mRenderer.setShaderConstant3F  'iChannel[2].resolution' resos[6], resos[7], resos[8]
+        @mRenderer.setShaderConstant3F  'iChannel[0].resolution' resos[0], resos[1],  resos[2]
+        @mRenderer.setShaderConstant3F  'iChannel[1].resolution' resos[3], resos[4],  resos[5]
+        @mRenderer.setShaderConstant3F  'iChannel[2].resolution' resos[6], resos[7],  resos[8]
         @mRenderer.setShaderConstant3F  'iChannel[3].resolution' resos[9], resos[10], resos[11]
+        ###
         l1 = @mRenderer.getAttribLocation(@mProgram, 'pos')
         @mRenderer.setViewport [ 0, 0, xres, yres ]
         @mRenderer.drawFullScreenTriangle_XY l1
@@ -580,6 +589,9 @@ class Pass
         @mRenderer.setShaderConstant1I  'iFrame' @mFrame
         @mRenderer.setShaderConstant1F  'iTimeDelta' dtime
         @mRenderer.setShaderConstant1F  'iFrameRate' fps
+        @mRenderer.setShaderConstant1FV 'iChannelTime' times
+        @mRenderer.setShaderConstant3FV 'iChannelResolution' resos
+        ###       
         @mRenderer.setShaderConstant1F  'iChannel[0].time' times[0]
         @mRenderer.setShaderConstant1F  'iChannel[1].time' times[1]
         @mRenderer.setShaderConstant1F  'iChannel[2].time' times[2]
@@ -588,6 +600,7 @@ class Pass
         @mRenderer.setShaderConstant3F  'iChannel[1].resolution' resos[3], resos[4], resos[5]
         @mRenderer.setShaderConstant3F  'iChannel[2].resolution' resos[6], resos[7], resos[8]
         @mRenderer.setShaderConstant3F  'iChannel[3].resolution' resos[9], resos[10], resos[11]
+        ###
     
     # 000  000   000  00000000   000   000  000000000   0000000  
     # 000  0000  000  000   000  000   000     000     000       
@@ -648,6 +661,7 @@ class Pass
     # 000        000   000  000  000   000     000     
     
     paint: (da, time, dtime, fps, xres, yres, isPaused, bufferID, bufferNeedsMimaps, buffers, cubeBuffers, keyboard, effect) ->
+        
         if @mType == 'image'
             @mRenderer.setRenderTarget null
             @paintImage da, time, dtime, fps, xres, yres, buffers, cubeBuffers, keyboard

@@ -1,5 +1,5 @@
 #define keys(x,y) texelFetch(iChannel0, ivec2(x,y), 0)
-#define load(x) texelFetch(iChannel1, ivec2(x,0), 0)
+#define load(x)   texelFetch(iChannel1, x, 0)
 #define font(x,y) texelFetch(iChannel2, ivec2(x,y), 0)
 bool keyState(int key) { return keys(key, 2).x < 0.5; }
 bool keyDown(int key)  { return keys(key, 0).x > 0.5; }
@@ -62,36 +62,26 @@ float print(ivec2 pos, vec2 v)
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
-    initGlobal(fragCoord, iResolution, iMouse);
+    initGlobal(fragCoord, iResolution, iMouse);
     for (int i = KEY_1; i <= KEY_9; i++) { if (keyDown(i)) { gl.option = i-KEY_1+1; break; } }
     
     bool dither = keyState(KEY_LEFT);
     bool dmpclr = keyState(KEY_RIGHT);
     
     vec3 col = vec3(0.0);
-	int num = int(load(0).x);
+    // col = load(ivec2(fragCoord)).rgb;
+    
+    col += print(ivec2(0,0), vec2(round(iFrameRate), iTime));
+    col += print(ivec2(0,text.size.y*5), load(ivec2(fragCoord)).rgb);
+    col += print(ivec2(0,text.size.y*4),  iChannelResolution[0]);
+    col += print(ivec2(0,text.size.y*3),  iChannelResolution[1]);
+    col += print(ivec2(0,text.size.y*2),  iChannelResolution[2]);
+    /*
+    col += print(ivec2(0,text.size.y*1),  (2.0*abs(iMouse)-vec4(iResolution.xyxy))/iResolution.y);
+    */  
     
-    col += print(ivec2(0,0), vec2(round(iTime), float(num)));
-    col += spark(gl.mp.x, gl.mp.y, 0.02);
+    col += spark(gl.mp.x, gl.mp.y, 0.02);
 
-    vec4 fish;
-    
-    for (int i = 1; i <= num; i++)
-    {
-        fish = load(i);
-            
-        vec2  w = gl.mp-fish.xy;
-        float df = 0.4;
-        float x = length(w);
-        float k = 100000.0;
-        float xsk = x+sqrt(1.0/k);
-        
-        if (dmpclr)
-            df = clamp(sqrt(k)*xsk/(1.0+k*xsk*xsk),0.0,1.0)*20.0;
-        
-        col += spark(fish.x, fish.y, 0.01)*df;
-    }
-    
     if (dither)
     {
         col -= vec3(hash12(gl.frag)*0.002);

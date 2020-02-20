@@ -6,7 +6,7 @@
 000   000  000   000  000  000   000
 ###
 
-{ app, args, slash } = require 'kxk'
+{ app, args, klog, slash } = require 'kxk'
 
 class Main extends app
 
@@ -14,7 +14,7 @@ class Main extends app
         
         dirs = ["#{__dirname}/../shader"]
         dirs = dirs.concat slash.list(dirs[0], type:'dir').filter((p) -> p.type=='dir').map (d) -> d.file
-        
+        klog dirs
         super
             dir:            __dirname
             dirs:           dirs

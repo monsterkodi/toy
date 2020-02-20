@@ -15,6 +15,10 @@ bool keyDown(int key)  { return keys(key, 0).x > 0.5; }
 #define NONE    0
 #define MOBILE  2
 
+#define SNOW_RES   min(iChannelResolution[1].y,1024.0)
+#define SNOW_I     int(SNOW_RES)
+#define SNOW_SCALE floor(SNOW_RES/64.0)
+
 //  0000000  000   000   0000000   000   000  
 // 000       0000  000  000   000  000 0 000  
 // 0000000   000 0 000  000   000  000000000  
@@ -23,13 +27,13 @@ bool keyDown(int key)  { return keys(key, 0).x > 0.5; }
 
 float snowHeight(vec3 p)
 {
-    vec2  q = mod(p.xz, 512.0);
+    vec2  q = mod(p.xz, 2.0*SNOW_RES);
     ivec2 m = ivec2(q)/2;
     vec4  h = load2(m.x, m.y);
     vec2  f = fract(q/2.0);
     vec4  n;
     
-    if (m.x < 2 && m.y < 8 || m.x >= 255 && m.y < 3 || m.y >= 255 && m.x < 2 || m.x >= 255 && m.y >= 255)
+    if (m.x < 2 && m.y < 8 || m.x >= SNOW_I-1 && m.y < 3 || m.y >= SNOW_I-1 && m.x < 2 || m.x >= SNOW_I-1 && m.y >= SNOW_I-1)
     {
         return load2(2, 0)[0];
     }
@@ -40,18 +44,18 @@ float snowHeight(vec3 p)
     }
     if (f.x >= 0.5 && f.y < 0.5)
     {
-        n  = load2((m.x+1)%256, m.y);
+        n  = load2((m.x+1)%SNOW_I, m.y);
         return mix(mix(h[2], n[0], (f.x-0.5)*2.0), mix(h[3], n[1], (f.x-0.5)*2.0), f.y*2.0);
     }
     if (f.x < 0.5 && f.y >= 0.5)
     {
-        n  = load2(m.x, (m.y+1)%256);
+        n  = load2(m.x, (m.y+1)%SNOW_I);
         return mix(mix(h[1], h[3], f.x*2.0), mix(n[0], n[2], f.x*2.0), (f.y-0.5)*2.0);
     }
 
-    n       = load2((m.x+1)%256, (m.y+1)%256);
-    vec4 nx = load2((m.x+1)%256, m.y);
-    vec4 ny = load2(m.x, (m.y+1)%256);
+    n       = load2((m.x+1)%SNOW_I, (m.y+1)%SNOW_I);
+    vec4 nx = load2((m.x+1)%SNOW_I, m.y);
+    vec4 ny = load2(m.x, (m.y+1)%SNOW_I);
     return mix(mix(h[3], nx[1], (f.x-0.5)*2.0), mix(ny[2], n[0], (f.x-0.5)*2.0), (f.y-0.5)*2.0);
 }
 
@@ -118,13 +122,13 @@ void saveMobile()
 
 void initCamera()
 {
-    save2(0,1,vec4(0,1,0,0));
-    save2(0,2,vec4(0,1,20,0));
+    save2(0,1,vec4(2,1,2,0));
+    save2(0,2,vec4(20,1,20,0));
 }
 
 void initMobile()
 {
-   mobile.pos    = vec3(0,1,0);
+   mobile.pos    = vec3(2,2,2);
    mobile.dir    = vx;
    mobile.up     = vy;
    mobile.rgt    = vz;
@@ -136,15 +140,15 @@ void initMobile()
 
 void initSnow(int x, int y)
 {
-   float x1 = 3.0*cos( (float(x)     /256.0-0.5)*TAU);
-   float x2 = 3.0*cos(((float(x)+0.5)/256.0-0.5)*TAU);
-   float y1 = 3.0*cos( (float(y)     /256.0-0.5)*TAU);
-   float y2 = 3.0*cos(((float(y)+0.5)/256.0-0.5)*TAU);
+   float x1 = 3.0*cos( (float(x)     /SNOW_RES-0.5)*TAU);
+   float x2 = 3.0*cos(((float(x)+0.5)/SNOW_RES-0.5)*TAU);
+   float y1 = 3.0*cos( (float(y)     /SNOW_RES-0.5)*TAU);
+   float y2 = 3.0*cos(((float(y)+0.5)/SNOW_RES-0.5)*TAU);
    
-   x1 += 1.0*cos(((float(x)+0.0)/64.0-0.5)*TAU);
-   x2 += 1.0*cos(((float(x)+0.5)/64.0-0.5)*TAU);
-   y1 += 1.0*cos(((float(y)+0.0)/64.0-0.5)*TAU);
-   y2 += 1.0*cos(((float(y)+0.5)/64.0-0.5)*TAU);
+   x1 += 1.0*cos(((float(x)+0.0)/(SNOW_RES/4.0)-0.5)*TAU);
+   x2 += 1.0*cos(((float(x)+0.5)/(SNOW_RES/4.0)-0.5)*TAU);
+   y1 += 1.0*cos(((float(y)+0.0)/(SNOW_RES/4.0)-0.5)*TAU);
+   y2 += 1.0*cos(((float(y)+0.5)/(SNOW_RES/4.0)-0.5)*TAU);
    
    save2(x, y, 8.0+vec4( x1+y1, x1+y2, x2+y1, x2+y2));
 }
@@ -167,7 +171,7 @@ void calcMobile()
     vec3 oldPosR = mobile.pos + 1.3*mobile.rgt;
     vec3 oldPosL = mobile.pos - 1.3*mobile.rgt;
     
-    float td = 1.0; // iTimeDelta*60.0;
+    float td = iTimeDelta*60.0;
         
     float rotSpeed = 4.0*td;
     float rotAngle = keyDown(KEY_LEFT) ? -rotSpeed : keyDown(KEY_RIGHT) ? rotSpeed : iMouse.z > 0.0 ? gl.mp.x * rotSpeed : 0.0;
@@ -181,7 +185,7 @@ void calcMobile()
         
     mobile.vel += acc;
     
-    mobile.pos += mobile.vel*td;
+    mobile.pos += mobile.vel;
     
     mobile.pos.y -= (floorHeight(mobile.pos+mobile.dir*2.0) + floorHeight(mobile.pos-mobile.dir*2.0) + floorHeight(mobile.pos+mobile.rgt*2.0) + floorHeight(mobile.pos-mobile.rgt*2.0))/4.0; 
     mobile.up     = mix(mobile.up, (floorNormal(mobile.pos+mobile.dir*2.0) + floorNormal(mobile.pos-mobile.dir*2.0) + floorNormal(mobile.pos+mobile.rgt*2.0) + floorNormal(mobile.pos-mobile.rgt*2.0))/4.0, 0.5);
@@ -191,18 +195,12 @@ void calcMobile()
     
     mobile.vel = mix(mobile.vel, mobile.dir*length(mobile.vel), 0.01);
     float vell = length(mobile.vel);
-    if (vell > 0.01)
+
+    vec3 veln = normalize(mobile.vel);
+    mobile.vel -= veln*0.01*td;
+    if (vell > 1.0)
     {
-        vec3 veln = normalize(mobile.vel);
-        mobile.vel -= veln*0.01;
-        if (vell > 1.0)
-        {
-            mobile.vel = veln;
-        }
-    }
-    else
-    {
-        mobile.vel = v0;
+        mobile.vel = veln;
     }
     
     vec3 deltaR = (mobile.pos + 1.3*mobile.rgt)-oldPosR;
@@ -231,7 +229,7 @@ void calcMobile()
 
 void calcSnow(int x, int y)
 {
-    if (keyDown(KEY_R)) 
+    if (keyDown(KEY_R) || load(0).x != SNOW_RES) 
     {
         initSnow(x, y);
         return;
@@ -241,20 +239,22 @@ void calcSnow(int x, int y)
     loadMobile();
     
     vec3 p = mobile.pos*SNOW_SCALE;
-    vec2 q1 = mod(p.xz, 512.0)*0.5;
-    vec2 q2 = q1+vec2(256.0,0);
-    vec2 q3 = q1-vec2(256.0,0);
-    vec2 q4 = q1+vec2(0,256.0);
-    vec2 q5 = q1-vec2(0,256.0);
+    vec2 q1 = mod(p.xz, SNOW_RES*2.0)*0.5;
+    vec2 q2 = q1+vec2(SNOW_RES,0);
+    vec2 q3 = q1-vec2(SNOW_RES,0);
+    vec2 q4 = q1+vec2(0,SNOW_RES);
+    vec2 q5 = q1-vec2(0,SNOW_RES);
     
-    float speedFactor = clamp01(1.2*(length(mobile.vel)-0.15));
+    float td = iTimeDelta*60.0;
+    float speedFactor = clamp01(1.2*(length(mobile.vel)-0.15*td));
     
     for (float i = float(ZERO); i < 4.0; i++)
     {
         vec2 o = vec2(x,y)+vec2(0.5*mod(floor(i/2.0),2.0),0.5*mod(i,2.0));
         float d = min (min( min(length(q1-o), length(q2-o)), min(length(q3-o), length(q4-o))), length(q5-o));
         float mf = clamp01(1.0-(mobile.pos.y-h[int(i)])/0.35);
-        h[int(i)] -= 0.33*(1.0-smoothstep(4.0,5.0+2.0*speedFactor,d))*speedFactor*mf;
+        float ssc = SNOW_SCALE/4.0;
+        h[int(i)] -= 0.33*(1.0-smoothstep(4.0*ssc,ssc*(5.0+2.0*speedFactor),d))*speedFactor*mf;
     }
     save2(x, y, h);
 }
@@ -273,7 +273,7 @@ void calcCamera()
     loadMobile();
         
     tgt.xyz = mix(tgt.xyz, mobile.pos, 0.2);
-    pos.xyz = mix(pos.xyz, tgt.xyz - 20.0*mobile.dir + 8.0*mobile.up, 0.005);
+    pos.xyz = mix(pos.xyz, tgt.xyz - 20.0*mobile.dir + 8.0*mobile.up, 0.02);
     
     pos.y = max(pos.y, snowHeight(pos.xyz)+8.0);
     
@@ -298,7 +298,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     {
         if (id == 0 && mem.y == 0)
         {
-            save(0,vec4(30.1,0,0,0));
+            save(0,vec4(SNOW_RES,0,0,0));
         }
         else
         {
@@ -322,7 +322,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     if (id == 0 && mem.y == 0)
     {
-        save(id,vec4(load(0).x+0.1,0,0,0));
+        save(id,vec4(SNOW_RES,0,0,0));
     }
     else
     {
@@ -334,7 +334,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         {
             calcMobile();
         }
-        else if (mem.x < 256 && mem.y < 256)
+        else if (mem.x < SNOW_I && mem.y < SNOW_I)
         {
             calcSnow(mem.x, mem.y);
         }

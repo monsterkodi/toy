@@ -1,4 +1,4 @@
-// #define TOY
+#define TOY
 #define PI   3.141592653589
 #define PI2  1.570796326795
 #define TAU  6.283185307178
@@ -77,8 +77,6 @@ struct SDF {
     vec3  pos;
     int   mat;
 } sdf;
-
-#define SNOW_SCALE 4.0
 
 float floorSinus()
 {

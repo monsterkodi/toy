@@ -16,6 +16,10 @@ bool keyDown(int key)  { return keys(key, 0).x > 0.5; }
 #define NMAT   5
 #define GLOW   100
 
+#define SNOW_RES   min(iChannelResolution[1].y,1024.0)
+#define SNOW_I     int(SNOW_RES)
+#define SNOW_SCALE floor(SNOW_RES/64.0)
+
 Mat[NMAT] material = Mat[NMAT](
     //  hue   sat  lum    shiny  glossy
     Mat(0.5,  0.0,  1.0,   0.0,  0.4 ), // SNOW
@@ -40,13 +44,13 @@ float at;
 
 float snowHeight(vec3 p)
 {
-    vec2  q = mod(p.xz, 512.0);
+    vec2  q = mod(p.xz, SNOW_RES*2.0);
     ivec2 m = ivec2(q)/2;
     vec4  h = load2(m.x, m.y);
     vec2  f = fract(q/2.0);
     float mx;
     vec4  n;
-    if (m.x < 2 && m.y < 8 || m.x >= 255 && m.y < 3 || m.y >= 255 && m.x < 2 || m.x >= 255 && m.y >= 255)
+    if (m.x < 2 && m.y < 8 || m.x >= SNOW_I-1 && m.y < 3 || m.y >= SNOW_I-1 && m.x < 2 || m.x >= SNOW_I-1 && m.y >= SNOW_I-1)
     {
         return load2(2, 0)[0];
     }
@@ -56,19 +60,19 @@ float snowHeight(vec3 p)
     }
     else if (f.x >= 0.5 && f.y < 0.5)
     {
-        n  = load2((m.x+1)%256, m.y);
+        n  = load2((m.x+1)%SNOW_I, m.y);
         mx = mix(mix(h[2], n[0], (f.x-0.5)*2.0), mix(h[3], n[1], (f.x-0.5)*2.0), f.y*2.0);
     }
     else if (f.x < 0.5 && f.y >= 0.5)
     {
-        n  = load2(m.x, (m.y+1)%256);
+        n  = load2(m.x, (m.y+1)%SNOW_I);
         mx = mix(mix(h[1], h[3], f.x*2.0), mix(n[0], n[2], f.x*2.0), (f.y-0.5)*2.0);
     }
     else
     {
-        n       = load2((m.x+1)%256, (m.y+1)%256);
-        vec4 nx = load2((m.x+1)%256, m.y);
-        vec4 ny = load2(m.x, (m.y+1)%256);
+        n       = load2((m.x+1)%SNOW_I, (m.y+1)%SNOW_I);
+        vec4 nx = load2((m.x+1)%SNOW_I, m.y);
+        vec4 ny = load2(m.x, (m.y+1)%SNOW_I);
         mx = mix(mix(h[3], nx[1], (f.x-0.5)*2.0), mix(ny[2], n[0], (f.x-0.5)*2.0), (f.y-0.5)*2.0);
     }
     
@@ -296,7 +300,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     
     rotate =  keyState(KEY_R);
     anim   =  keyState(KEY_P);
-    occl   =  keyState(KEY_O);
+    occl   = !keyState(KEY_O);
     dither =  keyState(KEY_G);
     normal = !keyState(KEY_X);
     depthb = !keyState(KEY_Z);
@@ -343,30 +347,5 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         if (foggy) col = mix(col, vec3(0.8), smoothstep(MAX_DIST*0.4, MAX_DIST*1.2, d));
     }
         
-    #ifndef TOY
-    if (false)
-    {
-        col *= vec3(1.0-10.0*print(5,4,vec3(mobile.up  )));
-        col *= vec3(1.0-10.0*print(5,3,vec3(mod(mobile.pos, 128.0))));
-        col *= vec3(1.0-10.0*print(5,2,vec3(mobile.pos )));
-        col *= vec3(1.0-10.0*print(5,1,vec4(mobile.vel, length(mobile.vel))));
-        col *= vec3(1.0-10.0*print(5,0,vec3(iFrameRate, iTime, iTimeDelta*60.0)));
-    }   
-    if (false)
-    {
-        if (gl.frag.x < 256.0 && gl.frag.y < 256.0)
-        {
-            col = load2(int(gl.frag.x), int(gl.frag.y)).xyz * 0.25 + 0.5;
-        }
-    }
-    if (false)
-    {
-        if (gl.frag.x < 512.0 && gl.frag.y < 512.0)
-        {
-            col = vec3(0.1*snowHeight(vec3(gl.frag.x, 0, gl.frag.y)));
-        }
-    }
-    #endif  
-    
     fragColor = postProc(col, dither, true, true);
 }

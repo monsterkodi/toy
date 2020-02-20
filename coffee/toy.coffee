@@ -54,8 +54,6 @@ class Toy
         
         # @loadNew()
         # @load 'gloworm'
-        # @load 'eyeboids'
-        # @load 'snowmobile'
         # @load 'kalamari'
         # @load 'veyerus'
         # @load 'hexisle'
@@ -63,8 +61,11 @@ class Toy
         # @load 'krap'
         # @load 'kerl'
         # @load 'army'
+        # @load 'astro'
+        # @load 'eyeboids'
         # @load 'boids'
-        @load 'astro'
+        # @load 'buffertest'
+        @load 'snowmobile'
 
     # 00000000   00000000  000   000  0000000    00000000  00000000   
     # 000   000  000       0000  000  000   000  000       000   000  
@@ -256,7 +257,11 @@ class Toy
             passes.push
                 type:   'buffer'
                 output: 'bufferA'
+                inputs: [channel:1 id:'bufferA' type:'buffer']
                 code:  slash.readText buffer
+                
+            if keyboard
+                passes[-1].inputs.push channel:0 id:0 type:'keyboard'
                 
         if font
             passes[0].inputs.push channel:2 id:2 type:'texture' src:slash.fileUrl "../img/font.png"
