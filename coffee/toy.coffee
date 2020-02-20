@@ -64,8 +64,8 @@ class Toy
         # @load 'astro'
         # @load 'eyeboids'
         # @load 'boids'
-        # @load 'buffertest'
-        @load 'snowmobile'
+        @load 'buffertest'
+        # @load 'snowmobile'
 
     # 00000000   00000000  000   000  0000000    00000000  00000000   
     # 000   000  000       0000  000  000   000  000       000   000  
@@ -113,11 +113,12 @@ class Toy
     # 000   000  000            000  000   000     000       
     # 000   000  00000000  0000000   000  0000000  00000000  
     
-    resize: (xres, yres) =>
-
+    resize: =>
+        
         if @mCanvas
-            @mCanvas.width  = @mCanvas.offsetWidth
-            @mCanvas.height = @mCanvas.offsetHeight
+            dpr = window.devicePixelRatio
+            @mCanvas.width  = @mCanvas.offsetWidth  * dpr
+            @mCanvas.height = @mCanvas.offsetHeight * dpr
             @mEffect.setSize @mCanvas.width, @mCanvas.height
             @mForceFrame = true
 

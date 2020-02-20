@@ -76,9 +76,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     col += print(ivec2(0,text.size.y*4),  iChannelResolution[0]);
     col += print(ivec2(0,text.size.y*3),  iChannelResolution[1]);
     col += print(ivec2(0,text.size.y*2),  iChannelResolution[2]);
-    /*
-    col += print(ivec2(0,text.size.y*1),  (2.0*abs(iMouse)-vec4(iResolution.xyxy))/iResolution.y);
-    */  
+    col += print(ivec2(0,text.size.y*1),  iMouse);
     
     col += spark(gl.mp.x, gl.mp.y, 0.02);
 

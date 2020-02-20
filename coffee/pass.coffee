@@ -6,7 +6,7 @@
 000        000   000  0000000   0000000   
 ###
 
-{ filter, klog } = require 'kxk'
+{ filter } = require 'kxk'
 Renderer = require './renderer'
 
 class Pass
@@ -419,13 +419,13 @@ class Pass
             texture.image = new Image
             texture.image.src = url.mSrc
             texture.id = @mEffect.assetID_to_bufferID(url.mID)
-            klog "newTexture 'buffer' #{slot}" url, texture.id
+            # klog "newTexture 'buffer' #{slot}" url, texture.id
             texture.loaded = true
             returnValue = 
                 mFailed: false
                 mNeedsShaderCompile: @mInputs[slot] == null or @mInputs[slot].mInfo.mType != 'texture' and @mInputs[slot].mInfo.mType != 'keyboard'
                 
-            klog "newTexture 'buffer' #{slot}" returnValue
+            # klog "newTexture 'buffer' #{slot}" returnValue
             @destroyInput slot
             @mInputs[slot] = texture
             @mEffect.resizeBuffer texture.id, @mEffect.mXres, @mEffect.mYres, false

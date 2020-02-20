@@ -81,17 +81,17 @@ class MainWin extends win
     mouseEvent: (event) -> 
         return if not @toy
         pos = @mousePos(event)
-        rfc = [window.devicePixelRatio ? 1, window.devicePixelRatio ? @iResolution.y]
         hgt = @toy.mCanvas.height
+        dpr = window.devicePixelRatio
         if event.buttons
             @toy.mEffect.mRenderer.iMouse = [
-                pos[0]          * rfc[0], hgt - pos[1]         * rfc[1]
-                @mouse.down[0]  * rfc[0], hgt - @mouse.down[1] * rfc[1]
+                pos[0]          * dpr, hgt - pos[1]         * dpr
+                @mouse.down[0]  * dpr, hgt - @mouse.down[1] * dpr
                 ]
         else
             @toy.mEffect.mRenderer.iMouse = [
-                @mouse.up[0]     * rfc[0],  hgt - @mouse.up[1]   * rfc[1]
-                -@mouse.down[0]  * rfc[0], -hgt - @mouse.down[1] * rfc[1]
+                @mouse.up[0]     * dpr,  hgt - @mouse.up[1]   * dpr
+                -@mouse.down[0]  * dpr, -hgt + @mouse.down[1] * dpr
                 ]
         
     # 00     00  00000000  000   000  000   000  
