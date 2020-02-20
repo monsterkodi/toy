@@ -1,11 +1,18 @@
+/*
+ 0000000   00000000   000  0000000      
+000        000   000  000  000   000    
+000  0000  0000000    000  000   000    
+000   000  000   000  000  000   000    
+ 0000000   000   000  000  0000000      
+*/
 
 KEYS
 PRINT
 TIME
 
-#define MAX_STEPS 128
-#define MIN_DIST  0.001
-#define MAX_DIST  100.0
+#define MAX_STEPS 512
+#define MIN_DIST  0.005
+#define MAX_DIST  1000.0
 
 #define NONE   0
 #define RED    1
@@ -13,11 +20,6 @@ TIME
 #define BLUE   3
 #define HEAD   4
 #define PLANE  5
-
-struct ray {
-    vec3 pos;
-    vec3 dir;
-};
 
 int mat;
 bool space, anim, soft, occl, light, dither, foggy, rotate, normal, depthb;
@@ -33,6 +35,7 @@ vec3 camDir;
 
 void sdCoords()
 {
+    if (gl.pass == PASS_SHADOW) return; 
     float r = 0.04;
     sdMat(RED,   sdCapsule(v0, vx*MAX_DIST, r));
     sdMat(GREEN, sdCapsule(v0, vy*MAX_DIST, r));
@@ -58,6 +61,7 @@ float map(vec3 p)
     sdCoords();
     sdMat(HEAD,  sdCube(v0, iRange(1.0, 2.0), iRange(0.0, 2.0)));
     sdMat(HEAD,  sdBox(vy*4.0, normalize(vec3(0, iRange(0.0, 2.0), 1.0-iRange(0.0, 2.0))), vx, vec3(iRange(1.0, 1.2)), iRange(0.0, 2.0)));
+    if (gl.pass == PASS_MARCH) sdMat(RED, sdSphere(gl.light1, 0.5));
     
     return sdf.dist;
 }
@@ -71,36 +75,36 @@ MARCH
 //      000  000   000  000   000  000   000  000   000  000   000  
 // 0000000   000   000  000   000  0000000     0000000   00     00  
 
-float hardShadow(vec3 ro, vec3 rd, float mint, float maxt, const float w)
+float hardShadow(vec3 ro, vec3 lp, vec3 n)
 {
-    for (float t=mint+float(gl.zero); t<maxt;)
+    gl.pass = PASS_SHADOW;  
+    ro += n*MIN_DIST*2.0;
+    vec3 rd = normalize(lp-ro);
+    for (float t=float(gl.zero); t<MAX_DIST;)
     {
         float h = map(ro+rd*t);
-        if (h < 0.001)
-        {
-            return w;
-        }
+        if (h < MIN_DIST) return gl.shadow;
         t+=h;
     }
     return 1.0;
 }
 
-float softShadow(vec3 ro, vec3 lp, float k)
+float softShadow(vec3 ro, vec3 lp, vec3 n, float k)
 {
+    gl.pass = PASS_SHADOW;  
+    ro += n*MIN_DIST*2.0;
     float shade = 1.0;
-    float dist = MIN_DIST;    
-    vec3 rd = (lp-ro);
+    vec3 rd = lp-ro;
     float end = max(length(rd), MIN_DIST);
-    float stepDist = end/25.0;
-    rd /= end;
-    for (int i = gl.zero; i < 25; i++)
+    rd = normalize(rd);
+    for (float t=float(gl.zero); t<end;)
     {
-        float h = map(ro+rd*dist);
-        shade = min(shade, k*h/dist);
-        dist += clamp(h, 0.02, stepDist);
-        if (h < 0.0 || dist > end) break; 
+        float h = map(ro+rd*t);
+        shade = min(shade, k*h/(t/k));
+        t += min(h, 0.1*k);
+        if (h < MIN_DIST) return gl.shadow;
     }
-    return min(max(shade, 0.0)+gl.shadow, 1.0); 
+    return clamp(shade, gl.shadow, 1.0); 
 }
 
 // 000      000   0000000   000   000  000000000  
@@ -113,9 +117,7 @@ float getLight(vec3 p, vec3 n)
 {
     vec3 cr = cross(camDir, vec3(0,1,0));
     vec3 up = normalize(cross(cr,camDir));
-    vec3 lp = camPos + vec3(0,2.0,0) + up*5.0; 
-    lp *= 5.0;
-    vec3 l = normalize(lp-p);
+    vec3 l = normalize(gl.light1-p);
  
     float ambient = 0.005;
     float dif = clamp(dot(n,l), 0.0, 1.0);
@@ -123,8 +125,8 @@ float getLight(vec3 p, vec3 n)
     {
         dif = pow(dif, 4.0);
     }
-    //dif *= hardShadow(p, normalize(lp-p), MIN_DIST, 100.0, 0.2);
-    dif *= softShadow(p, lp, 4.0);        
+    // dif *= hardShadow(p, gl.light1, n);
+    dif *= softShadow(p, gl.light1, n, 2.0);
     return clamp(dif, ambient, 1.0);
 }
 
@@ -137,9 +139,10 @@ float getLight(vec3 p, vec3 n)
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {    
     initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame);
-    gl.shadow = 0.6;
+    gl.shadow = 0.0;
+    gl.light1 = (vy + vx)*15.0;
     
-    rotate =  keyState(KEY_R);
+    rotate = !keyState(KEY_R);
     anim   =  keyState(KEY_P);
     occl   =  keyState(KEY_UP);
     dither =  keyState(KEY_D);
@@ -177,7 +180,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         
     vec3 rd = normalize(uv.x*uu + uv.y*vv + ww);
 
-    float d = rayMarch(camPos, rd);
+    float d = march(camPos, rd);
     mat = sdf.mat;
     
     vec3  p = camPos + d * rd;
@@ -233,7 +236,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     {
         uv = (iMouse.xy-.5*iResolution.xy)/iResolution.y;
         rd = normalize(uv.x*uu + uv.y*vv + ww);
-        d  = rayMarch(camPos, rd);
+        d  = march(camPos, rd);
         if (d < MAX_DIST)
         {
             p = camPos + d * rd;

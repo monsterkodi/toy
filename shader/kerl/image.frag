@@ -1,14 +1,14 @@
-#define TOY  1
+/*
+000   000  00000000  00000000   000        
+000  000   000       000   000  000        
+0000000    0000000   0000000    000        
+000  000   000       000   000  000        
+000   000  00000000  000   000  0000000    
+*/
 
-#ifdef TOY
 #define MAX_STEPS 64
 #define MIN_DIST  0.01
 #define MAX_DIST  80.0
-#else
-#define MAX_STEPS 64
-#define MIN_DIST  0.01
-#define MAX_DIST  100.0
-#endif
 
 #define PI 3.141592653589793
 #define ZERO min(iFrame,0)
