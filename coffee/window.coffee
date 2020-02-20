@@ -60,7 +60,7 @@ class MainWin extends win
         # klog mod, key, combo, char, event.which
         
         if event.which < 256 and not event.repeat
-            @toy.mEffect.setKeyUp event.which
+            @toy?.mEffect.setKeyUp event.which
         
         super
         

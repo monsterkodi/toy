@@ -224,12 +224,12 @@ float getOcclusion(vec3 p, vec3 n)
 float softShadow(vec3 ro, vec3 lp, float k)
 {
     float shade = 1.0;
-    float dist = 1.0;    
+    float dist = MIN_DIST;    
     vec3 rd = (lp-ro);
     float end = max(length(rd), MIN_DIST);
-    float stepDist = end/24.0;
+    float stepDist = end/25.0;
     rd /= end;
-    for (int i = ZERO; i < 24; i++)
+    for (int i = ZERO; i < 25; i++)
     {
         float h = map(ro+rd*dist);
         shade = min(shade, k*h/dist);

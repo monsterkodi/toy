@@ -294,7 +294,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     ivec2 mem = ivec2(fragCoord);
     int id = mem.x;
     
-    if (iFrame < 10)
+    if (iFrame < 1)
     {
         if (id == 0 && mem.y == 0)
         {

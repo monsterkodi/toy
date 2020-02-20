@@ -62,10 +62,11 @@ class Toy
         # @load 'kerl'
         # @load 'army'
         # @load 'astro'
-        # @load 'eyeboids'
         # @load 'boids'
-        @load 'buffertest'
+        # @load 'eyeboids'
+        # @load 'buffertest'
         # @load 'snowmobile'
+        @load 'grid'
 
     # 00000000   00000000  000   000  0000000    00000000  00000000   
     # 000   000  000       0000  000  000   000  000       000   000  
@@ -220,13 +221,15 @@ class Toy
     load: (dir) ->
         shaderDir = slash.resolve "#{__dirname}/../shader/#{dir}"
         imageFile = "#{shaderDir}/image.frag"
-        return if not slash.fileExists imageFile
+        if not slash.fileExists imageFile
+            error "missing #{imageFile}"
+            return
         shader = image:imageFile
         for file in ['common' 'buffer']
             if slash.fileExists "#{shaderDir}/#{file}.frag"
                 shader[file] = "#{shaderDir}/#{file}.frag"
                 
-        klog 'loading shader dir' shader
+        # klog 'loading shader dir' shader
         @loadShader shader
     
     loadShader: (image:, common:, buffer:, keyboard:true, font:true) ->

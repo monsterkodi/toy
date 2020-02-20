@@ -1,5 +1,5 @@
 
-#define TOY  1
+// #define TOY  1
 
 #define MAX_STEPS 96
 #define MIN_DIST   0.005

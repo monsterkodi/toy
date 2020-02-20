@@ -3,7 +3,7 @@
 float scale = 25.0;
 #define offset (0.003 * scale)
 
-float func1(float x, float p) 
+float func1(float x, float p)
 {    
     return 5.*sin(x*p);
 }

@@ -1,4 +1,56 @@
 // #define TOY
+
+#define keys(x,y)  texelFetch(iChannel0, ivec2(x,y), 0)
+
+#define KEYS \
+bool keyState(int key) { return keys(key, 2).x < 0.5; } \
+bool keyDown(int key)  { return keys(key, 0).x > 0.5; } 
+
+#define TIME \
+float iRange(float l, float h, float f) { return l+(h-l)*(sin(iTime)*0.5+0.5); } \
+float iRange(float l, float h) { return iRange(l,h,1.0); }
+
+// 000   000   0000000   00000000   00     00   0000000   000      
+// 0000  000  000   000  000   000  000   000  000   000  000      
+// 000 0 000  000   000  0000000    000000000  000000000  000      
+// 000  0000  000   000  000   000  000 0 000  000   000  000      
+// 000   000   0000000   000   000  000   000  000   000  0000000  
+
+#define NORMAL \
+vec3 getNormal(vec3 p)                                                   \
+{                                                                        \
+    vec3 n = v0;                                                         \
+    for (int i=gl.zero; i<4; i++)                                        \
+    {                                                                    \
+        vec3 e = 0.5773*(2.0*vec3((((i+3)>>1)&1),((i>>1)&1),(i&1))-1.0); \
+        n += e*map(p+e*0.0001);                                          \
+    }                                                                    \
+    return normalize(n);                                                 \
+}
+
+
+// 00     00   0000000   00000000    0000000  000   000  
+// 000   000  000   000  000   000  000       000   000  
+// 000000000  000000000  0000000    000       000000000  
+// 000 0 000  000   000  000   000  000       000   000  
+// 000   000  000   000  000   000   0000000  000   000  
+
+#define MARCH \
+float rayMarch(vec3 ro, vec3 rd)                                         \
+{                                                                        \
+    float dz = 0.0;                                                      \
+    for (int i = gl.zero; i < MAX_STEPS; i++)                            \
+    {                                                                    \
+        vec3 p = ro + dz * rd;                                           \
+        float d = map(p);                                                \
+        dz += d;                                                         \
+        if (d < MIN_DIST) return dz;                                     \
+        if (dz > MAX_DIST) break;                                        \
+    }                                                                    \
+    sdf.mat = NONE;                                                      \
+    return dz;                                                           \
+}
+
 #define PI   3.141592653589
 #define PI2  1.570796326795
 #define TAU  6.283185307178
@@ -35,11 +87,13 @@ const vec3 vx = vec3(1,0,0);
 const vec3 vy = vec3(0,1,0);
 const vec3 vz = vec3(0,0,1);
 
-const vec3 red   = vec3(0.8,0.0,0.0);
-const vec3 green = vec3(0.0,0.5,0.0);
-const vec3 blue  = vec3(0.2,0.2,1.0);
-const vec3 white = vec3(1.0,1.0,1.0);
-const vec3 black = vec3(0.0,0.0,0.0);
+const vec3 red    = vec3(0.8,0.0,0.0);
+const vec3 green  = vec3(0.0,0.5,0.0);
+const vec3 blue   = vec3(0.2,0.2,1.0);
+const vec3 white  = vec3(1.0,1.0,1.0);
+const vec3 black  = vec3(0.0,0.0,0.0);
+const vec3 yellow = vec3(1.0,1.0,0.0);
+const vec3 orange = vec3(1.0,0.5,0.0);
 
 #define sdMat(m,d)  if (d < sdf.dist) { sdf.dist = d; sdf.mat = m; }
     
@@ -79,7 +133,7 @@ struct _gl {
     ivec2 ifrag;
     float aspect;
     vec4  color;
-    int   option;
+    int   frame;
     float time;
     vec3  light1;
     vec3  light2;
@@ -112,7 +166,7 @@ struct Mat {
 
 uniform sampler2D fontChannel;
 
-void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time)
+void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int frame)
 {
     text.size = ivec2(16,32)*2;
     text.adv  = ivec2(text.size.x,0);
@@ -131,11 +185,13 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time)
 
     gl.aspect = resolution.x / resolution.y;
     gl.frag   = fragCoord;
+    gl.frame  = frame;
     gl.ifrag  = ivec2(fragCoord);
     gl.uv     = (fragCoord+fragCoord-resolution.xy)/resolution.y;
     
     gl.ambient = 0.03;
     gl.shadow  = 0.20;
+    gl.zero    = min(frame,0);
 }
 
 float powi(int a, int b) { return pow(float(a), float(b)); }
@@ -149,65 +205,64 @@ vec3  clamp01(vec3 v) { return clamp(v, 0.0, 1.0); }
 // 000        000   000  000  000  0000     000     
 // 000        000   000  000  000   000     000     
 
-#ifndef TOY
-float print(ivec2 pos, int ch)
-{
-    ivec2 r = gl.ifrag-pos; bool i = r.y>0 && r.x>0 && r.x<=text.size.y && r.y<=text.size.y;
-    return i ? texelFetch(iChannel2,ivec2((ch%16)*64,(1024-64-64*(ch/16)))+r*64/text.size.y,0).r : 0.0;
-}
-
-float print(ivec2 pos, float v)
-{
-    float c = 0.0; ivec2 a = text.adv; 
-    float fv = fract(v);
-    v = (fv > 0.995 || fv < 0.005) ? round(v) : v;
-    float f = abs(v);
-    int i = (fv == 0.0) ? 1 : fract(v*10.0) == 0.0 ? -1 : -2;
-    int ch, u = max(1,int(log10(f))+1);
-    ivec2 p = pos+6*a;
-    for (; i <= u; i++) {
-        if (i == 0)     ch = 46;
-        else if (i > 0) ch = 48+int(mod(f, powi(10,i))/powi(10,i-1));
-        else            ch = 48+int(mod(f+0.005, powi(10,i+1))/powi(10,i));
-        c = max(c, print(p-i*a, ch)*float(i+3)/30.0); }
-    if (v < 0.0) c = max(c, print(p-i*a, 45)*float(i)/30.0);
-    return c;
-}
-
-float print(ivec2 pos, vec4 v)
-{
-    float c = 0.0;
-    for (int i = 0; i < 4; i++) {
-        c = max(c, print(pos, v[i]));
-        pos += text.adv*8; }
-    return c;
-}
-
-float print(ivec2 pos, vec3 v)
-{
-    float c = 0.0;
-    for (int i = 0; i < 3; i++) {
-        c = max(c, print(pos, v[i]));
-        pos += text.adv*8; }
-    return c;
-}
-
-float print(ivec2 pos, vec2 v)
-{
-    float c = 0.0;
-    for (int i = 0; i < 2; i++) {
-        c = max(c, print(pos, v[i]));
-        pos += text.adv*8; }
-    return c;
-}
-
-float print(int x, int y, int v)   { return print(ivec2(text.size.x*x,text.size.y*y), float(v)); }
-float print(int x, int y, float v) { return print(ivec2(text.size.x*x,text.size.y*y), v); }
-float print(int x, int y, vec4 v)  { return print(ivec2(text.size.x*x,text.size.y*y), v); }
-float print(int x, int y, vec3 v)  { return print(ivec2(text.size.x*x,text.size.y*y), v); }
-float print(int x, int y, vec2 v)  { return print(ivec2(text.size.x*x,text.size.y*y), v); }
-float print(int x, int y, ivec3 v) { return print(ivec2(text.size.x*x,text.size.y*y), vec3(v)); }
-#endif
+#define PRINT \
+float print(ivec2 pos, int ch)                                                                              \
+{                                                                                                           \
+    ivec2 r = gl.ifrag-pos; bool i = r.y>0 && r.x>0 && r.x<=text.size.y && r.y<=text.size.y;                \
+    return i ? texelFetch(iChannel2,ivec2((ch%16)*64,(1024-64-64*(ch/16)))+r*64/text.size.y,0).r : 0.0;     \
+}                                                                                                           \
+                                                                                                            \
+float print(ivec2 pos, float v)                                                                             \
+{                                                                                                           \
+    float c = 0.0; ivec2 a = text.adv;                                                                      \
+    float fv = fract(v);                                                                                    \
+    v = (fv > 0.995 || fv < 0.005) ? round(v) : v;                                                          \
+    float f = abs(v);                                                                                       \
+    int i = (fv == 0.0) ? 1 : fract(v*10.0) == 0.0 ? -1 : -2;                                               \
+    int ch, u = max(1,int(log10(f))+1);                                                                     \
+    ivec2 p = pos+6*a;                                                                                      \
+    for (; i <= u; i++) {                                                                                   \
+        if (i == 0)     ch = 46;                                                                            \
+        else if (i > 0) ch = 48+int(mod(f, powi(10,i))/powi(10,i-1));                                       \
+        else            ch = 48+int(mod(f+0.005, powi(10,i+1))/powi(10,i));                                 \
+        c = max(c, print(p-i*a, ch)*float(i+3)/30.0); }                                                     \
+    if (v < 0.0) c = max(c, print(p-i*a, 45)*float(i)/30.0);                                                \
+    return c;                                                                                               \
+}                                                                                                           \
+                                                                                                            \
+float print(ivec2 pos, vec4 v)                                                                              \
+{                                                                                                           \
+    float c = 0.0;                                                                                          \
+    for (int i = 0; i < 4; i++) {                                                                           \
+        c = max(c, print(pos, v[i]));                                                                       \
+        pos += text.adv*8; }                                                                                \
+    return c;                                                                                               \
+}                                                                                                           \
+                                                                                                            \
+float print(ivec2 pos, vec3 v)                                                                              \
+{                                                                                                           \
+    float c = 0.0;                                                                                          \
+    for (int i = 0; i < 3; i++) {                                                                           \
+        c = max(c, print(pos, v[i]));                                                                       \
+        pos += text.adv*8; }                                                                                \
+    return c;                                                                                               \
+}                                                                                                           \
+                                                                                                            \
+float print(ivec2 pos, vec2 v)                                                                              \
+{                                                                                                           \
+    float c = 0.0;                                                                                          \
+    for (int i = 0; i < 2; i++) {                                                                           \
+        c = max(c, print(pos, v[i]));                                                                       \
+        pos += text.adv*8; }                                                                                \
+    return c;                                                                                               \
+}                                                                                                           \
+                                                                                                            \
+float print(int x, int y, float v) { return print(ivec2(text.size.x*x,text.size.y*y), v); }                 \
+float print(int x, int y, int v)   { return print(ivec2(text.size.x*x,text.size.y*y), float(v)); }          \
+float print(int x, int y, vec4 v)  { return print(ivec2(text.size.x*x,text.size.y*y), v); }                 \
+float print(int x, int y, vec3 v)  { return print(ivec2(text.size.x*x,text.size.y*y), v); }                 \
+float print(int x, int y, vec2 v)  { return print(ivec2(text.size.x*x,text.size.y*y), v); }                 \
+float print(int x, int y, ivec3 v) { return print(ivec2(text.size.x*x,text.size.y*y), vec3(v)); }        
 
 // 000   000   0000000    0000000  000   000  
 // 000   000  000   000  000       000   000  
@@ -526,8 +581,23 @@ float sdHalfSphere(vec3 a, vec3 n, float r, float k)
 
 float sdBox(vec3 a, vec3 b, float r)
 {
-  vec3 q = abs(sdf.pos-a)-b;
-  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
+    vec3 q = abs(sdf.pos-a)-(b-r);
+    return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
+}
+
+float sdCube(vec3 a, float s, float r)
+{
+    return sdBox(a, vec3(s), r);
+}
+
+float sdBox(vec3 a, vec3 up, vec3 dir, vec3 dim, float r)
+{
+  vec3  q = sdf.pos-a;
+  dim -= r;
+  float x = abs(dot(cross(dir, up), q))-dim.x;
+  float y = abs(dot(up,  q))-dim.y;
+  float z = abs(dot(dir, q))-dim.z;
+  return max(x,max(y,z))-r;
 }
 
 float sdEllipsoid(vec3 a, vec3 r)
