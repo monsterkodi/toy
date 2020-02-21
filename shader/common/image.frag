@@ -8,7 +8,6 @@
 
 KEYS
 PRINT
-TIME
 
 #define NONE   0
 #define HEAD   4
@@ -27,10 +26,9 @@ float map(vec3 p)
     sdFloor(white, -2.0);
     sdAxes(0.1);
     sdMat(HEAD,  sdCube(v0, 1.0, 0.2));
-    // sdMat(HEAD,  sdCube(vy*5.0, 1.0, 0.2));
-    sdMat(HEAD,  sdCube(vy*10.0, 1.0, 0.2));
     sdMat(HEAD,  sdCube(v0, iRange(1.0, 2.0), iRange(0.0, 2.0)));
-    sdMat(HEAD,  sdBox(vy*5.0, normalize(vec3(0, iRange(0.0, 2.0), 1.0-iRange(0.0, 2.0))), vx, vec3(iRange(1.0, 1.2)), iRange(0.0, 2.0)));
+    sdMat(HEAD,  sdBox(vy*5.0, vx, rotAxisAngle(vy, vx, iRange(0.0,360.0)), vec3(iRange(1.5, 1.0)), iRange(0.2, 0.1)));
+    sdMat(HEAD,  sdBox(vy*10.0, rotAxisAngle(vx, vy, iRange(0.0,360.0)), vy, vec3(1), iRange(0.0, 0.5)));
     
     if (gl.pass == PASS_MARCH) sdColor(white, sdSphere(gl.light1, 0.5));
     
@@ -46,17 +44,15 @@ MARCH
 //      000  000   000  000   000  000   000  000   000  000   000  
 // 0000000   000   000  000   000  0000000     0000000   00     00  
 
-float shadowFade(float t, float k, float shade)
+float shadowFade(float t, float shade)
 {
-    shade = max(1.0-pow(1.0-t/gl.maxDist, 10.0*k), shade);
-    return gl.shadow + shade * (1.0-gl.shadow);
+    shade = max(1.0-pow(1.0-t/gl.maxDist, gl.shadow.power*gl.shadow.soft), shade);
+    return gl.shadow.bright + shade * (1.0-gl.shadow.bright);
 }
 
-float shadow(vec3 ro, vec3 lp, vec3 n, float softness)
+float shadow(vec3 ro, vec3 lp, vec3 n)
 {
     gl.pass = PASS_SHADOW; 
-    
-    float k = softness;
     
     ro += n*gl.minDist*2.0;
     vec3 rd = lp-ro;
@@ -70,12 +66,13 @@ float shadow(vec3 ro, vec3 lp, vec3 n, float softness)
         float d = map(ro+rd*t);
         if (d < gl.minDist) { shade = 0.0; break; }
         
-        if (softness > 0.001)
+        if (gl.shadow.soft > 0.01)
         {
-            if (d/(t*k*0.1) < shade)
+            float newShade = d/(t*gl.shadow.soft*0.1);
+            if (newShade < shade)
             {
                 sd = t;
-                shade = d/(t*k*0.1);
+                shade = newShade;
             }
             t += min(d, 0.1);
         }
@@ -83,9 +80,8 @@ float shadow(vec3 ro, vec3 lp, vec3 n, float softness)
         {
             t += d;
         }
-        
     }
-    return shadowFade(sd, k, shade);
+    return shadowFade(sd, shade);
 }
 
 // 000      000   0000000   000   000  000000000  
@@ -101,10 +97,9 @@ float diffuse(vec3 p, vec3 n)
     vec3 l  = normalize(gl.light1-p);
  
     float dif = clamp(dot(n,l), 0.0, 1.0);
-    dif *= shadow(p, gl.light1, n, iRange(0.0, 1.0, 0.5));
+    dif *= shadow(p, gl.light1, n);
     
-    float ambient = 0.005;
-    return clamp(dif, ambient, 1.0);
+    return clamp(dif, gl.ambient, 1.0);
 }
 
 vec3 getLight(vec3 p, vec3 n, SDF hit)
@@ -147,12 +142,7 @@ vec3 getLight(vec3 p, vec3 n, SDF hit)
 // 000   000  000   000  000  000   000  
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
-{    
-    initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame);
-    gl.light1 = (vy + vx)*15.0;
-    gl.shadow = 0.2;
-    gl.maxDist = 100.0;
-    
+{   
     opt.rotate = !keyState(KEY_R);
     opt.anim   =  keyState(KEY_P);
     opt.occl   =  keyState(KEY_UP);
@@ -163,7 +153,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     opt.space  = !keyState(KEY_SPACE);
     opt.foggy  =  keyState(KEY_F);
     opt.grid   =  keyState(KEY_G);
-            
+    
+    initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame);
+    gl.light1 = (vy*3.0 + vx)*iRange(5.0,8.0);
+    gl.ambient       = 0.1; // iRange(0.0,0.1);
+    gl.shadow.bright = 0.5; // iRange(0.2,0.8);
+    gl.shadow.power  = 5.0; // iRange(2.0, 8.0);
+    gl.shadow.soft   = 0.4; // iRange(0.0,1.0);
+    gl.maxDist = 100.0;
+                
     float mx = 2.0*(iMouse.x/iResolution.x-0.5);
     float my = 2.0*(iMouse.y/iResolution.y-0.5);
     
@@ -193,12 +191,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         col += vec3(dit/1024.0);
     }
     
-    col = mix(col, yellow, print(0,  0,  iFrameRate));
-    col = mix(col, blue,   print(0,  1,  iTime     ));
-    col = mix(col, green,  print(10, 0,  iMouse.y  ));
-    col = mix(col, red,    print(10, 1,  iMouse.x  ));
-    col = mix(col, green,  print(20, 0,  my        ));
-    col = mix(col, red,    print(20, 1,  mx        ));
+    col = mix(col, blue,   print(0,  0,  iFrameRate));
+    col = mix(col, red,    print(0,  1,  iTime     ));
+    col = mix(col, yellow, print(0,  2,  iTimeDelta*1000.0));
+    col = mix(col, red,    print(0,  3,  iMouse.x  ));
+    col = mix(col, green,  print(10, 3,  iMouse.y  ));
+    col = mix(col, green,  print(0,  4,  my        ));
+    col = mix(col, red,    print(10, 4,  mx        ));
 
     if (iMouse.z > 0.0)
     {

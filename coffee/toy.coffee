@@ -20,10 +20,11 @@ class Toy
         @mCreated    = false
         @mGLContext  = null
         @mEffect     = null
-        @mTo         = null
+        @mStartTime         = null
         @mIsPaused   = false
         @mForceFrame = false
         @mPass       = []
+        @fpsCache    = []
         @mActiveDoc  = 0
     
         devicePixelRatio = window.devicePixelRatio or 1
@@ -31,9 +32,8 @@ class Toy
         @mCanvas.width  = @mCanvas.offsetWidth * devicePixelRatio
         @mCanvas.height = @mCanvas.offsetHeight * devicePixelRatio
     
-        @mTo        = performance.now()
-        @mTf        = 0
-        @mRestarted = true
+        @mStartTime        = performance.now()
+        @mFrameTime        = 0
         @mIsRendering = false
     
         @mGLContext = Renderer.createGlContext @mCanvas
@@ -92,21 +92,23 @@ class Toy
 
         time = performance.now()
 
-        ltime = 0.0
-        dtime = 0.0
+        relTime = 0.0
+        deltaTime = 0.0
         if @mIsPaused
-            ltime = @mTf
-            dtime = 1000.0 / 60.0
+            relTime = @mFrameTime
+            deltaTime = 1000.0 / 60.0
         else
-            ltime = time - @mTo
-            if @mRestarted
-                dtime = 1000.0/60.0
-            else
-                dtime = ltime - @mTf 
-            @mTf = ltime
-        @mRestarted = false
+            relTime = time - @mStartTime
+            deltaTime = relTime - @mFrameTime 
+            @mFrameTime = relTime
 
-        @mEffect.paint ltime/1000.0, dtime/1000.0, 60, @mIsPaused 
+        @fpsCache.push 1000.0/deltaTime
+        if @fpsCache.length > 60 then @fpsCache.shift()
+        
+        fps = 0
+        @fpsCache.map (f) -> fps += f
+        fps /= @fpsCache.length
+        @mEffect.paint relTime/1000.0, deltaTime/1000.0, fps, @mIsPaused 
 
     # 00000000   00000000   0000000  000  0000000  00000000  
     # 000   000  000       000       000     000   000       

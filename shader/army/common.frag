@@ -59,9 +59,11 @@ struct SDF {
 struct _gl {
     vec2  uv;
     vec2  frag;
+    vec2  res;
     vec2  mouse;
     vec2  mp;
     ivec2 ifrag;
+    ivec2 ires;
     float aspect;
     vec4  color;
     int   option;
@@ -115,6 +117,7 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time)
     gl.aspect = resolution.x / resolution.y;
     gl.frag   = fragCoord;
     gl.ifrag  = ivec2(fragCoord);
+    gl.ires   = ivec2(resolution.xy);
     gl.uv     = (fragCoord+fragCoord-resolution.xy)/resolution.y;
     
     gl.ambient = 0.03;

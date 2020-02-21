@@ -508,16 +508,7 @@ class Pass
         @mRenderer.setShaderConstant1F  'iFrameRate' fps
         @mRenderer.setShaderConstant1FV 'iChannelTime' times
         @mRenderer.setShaderConstant3FV 'iChannelResolution' resos
-        ###
-        @mRenderer.setShaderConstant1F  'iChannel[0].time' times[0]
-        @mRenderer.setShaderConstant1F  'iChannel[1].time' times[1]
-        @mRenderer.setShaderConstant1F  'iChannel[2].time' times[2]
-        @mRenderer.setShaderConstant1F  'iChannel[3].time' times[3]
-        @mRenderer.setShaderConstant3F  'iChannel[0].resolution' resos[0], resos[1],  resos[2]
-        @mRenderer.setShaderConstant3F  'iChannel[1].resolution' resos[3], resos[4],  resos[5]
-        @mRenderer.setShaderConstant3F  'iChannel[2].resolution' resos[6], resos[7],  resos[8]
-        @mRenderer.setShaderConstant3F  'iChannel[3].resolution' resos[9], resos[10], resos[11]
-        ###
+
         l1 = @mRenderer.getAttribLocation(@mProgram, 'pos')
         @mRenderer.setViewport [ 0, 0, xres, yres ]
         @mRenderer.drawFullScreenTriangle_XY l1
@@ -591,16 +582,6 @@ class Pass
         @mRenderer.setShaderConstant1F  'iFrameRate' fps
         @mRenderer.setShaderConstant1FV 'iChannelTime' times
         @mRenderer.setShaderConstant3FV 'iChannelResolution' resos
-        ###       
-        @mRenderer.setShaderConstant1F  'iChannel[0].time' times[0]
-        @mRenderer.setShaderConstant1F  'iChannel[1].time' times[1]
-        @mRenderer.setShaderConstant1F  'iChannel[2].time' times[2]
-        @mRenderer.setShaderConstant1F  'iChannel[3].time' times[3]
-        @mRenderer.setShaderConstant3F  'iChannel[0].resolution' resos[0], resos[1], resos[2]
-        @mRenderer.setShaderConstant3F  'iChannel[1].resolution' resos[3], resos[4], resos[5]
-        @mRenderer.setShaderConstant3F  'iChannel[2].resolution' resos[6], resos[7], resos[8]
-        @mRenderer.setShaderConstant3F  'iChannel[3].resolution' resos[9], resos[10], resos[11]
-        ###
     
     # 000  000   000  00000000   000   000  000000000   0000000  
     # 000  0000  000  000   000  000   000     000     000       
