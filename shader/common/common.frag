@@ -30,19 +30,31 @@ vec3 getNormal(vec3 p)                                                   \
 // 000   000  000   000  000   000   0000000  000   000  
 
 #define MARCH \
-float march(vec3 ro, vec3 rd)                                            \
-{                                                                        \
-    gl.pass = PASS_MARCH;                                                \
-    float t = 0.0;                                                       \
-    for (int i = gl.zero; i < gl.maxSteps; i++)                          \
-    {                                                                    \
-        float d = map(ro+t*rd);                                          \
-        t += d;                                                          \
-        if (d < gl.minDist) return t;                                    \
-        if (t > gl.maxDist) break;                                       \
-    }                                                                    \
-    sdf.mat = NONE;                                                      \
-    return t;                                                            \
+void copyHit(float t, vec3 p)                          \
+{                                                      \
+    gl.hit.dist   = t;                                 \
+    gl.hit.mat    = sdf.mat;                           \
+    gl.hit.color  = sdf.color;                         \
+    gl.hit.pos    = p;                                 \
+    gl.hit.normal = getNormal(p);                      \
+}                                                      \
+void march(vec3 ro, vec2 uv)                           \
+{                                                      \
+    uv = (2.0*uv-gl.res)/gl.res.y;                     \
+    vec3 rd = normalize(uv.x*cam.x + uv.y*cam.up + cam.fov*cam.dir); \
+                                                       \
+    gl.pass = PASS_MARCH;                              \
+    float t = 0.0;                                     \
+    for (int i = gl.zero; i < gl.maxSteps; i++)        \
+    {                                                  \
+        vec3 p = ro+t*rd;                              \
+        float d = map(p);                              \
+        t += d;                                        \
+        if (d < gl.minDist) { copyHit(t, p); return; } \
+        if (t > gl.maxDist) break;                     \
+    }                                                  \
+    gl.hit.mat  = NONE;                                \
+    gl.hit.dist = gl.maxDist;                          \
 }
 
 #define PI   3.141592653589
@@ -142,6 +154,7 @@ struct Opt {
     bool rotate; 
     bool normal; 
     bool depthb;
+    bool vignette;
 } opt;
 
 //  0000000   0000000   00     00  
@@ -161,11 +174,45 @@ struct Cam {
     float fov;
 } cam;
 
+//  0000000  000   000   0000000   0000000     0000000   000   000  
+// 000       000   000  000   000  000   000  000   000  000 0 000  
+// 0000000   000000000  000000000  000   000  000   000  000000000  
+//      000  000   000  000   000  000   000  000   000  000   000  
+// 0000000   000   000  000   000  0000000     0000000   00     00  
+
 struct Shadow {
     float soft;
     float power;
     float bright;
 };
+
+// 00     00   0000000   000000000  
+// 000   000  000   000     000     
+// 000000000  000000000     000     
+// 000 0 000  000   000     000     
+// 000   000  000   000     000     
+
+struct Mat {
+    float hue;
+    float sat;
+    float lum;
+    float shiny;
+    float glossy;
+};
+
+//  0000000  0000000    00000000  
+// 000       000   000  000       
+// 0000000   000   000  000000    
+//      000  000   000  000       
+// 0000000   0000000    000       
+
+struct SDF {
+    vec3  pos;
+    vec3  color;
+    vec3  normal;
+    float dist;
+    int   mat;
+} sdf;
 
 //  0000000   000       0000000   0000000     0000000   000      
 // 000        000      000   000  000   000  000   000  000      
@@ -197,6 +244,7 @@ struct Global {
     float  minDist;
     float  maxDist;
     Shadow shadow;
+    SDF    hit;
 } gl;
 
 // 000  000   000  000  000000000  
@@ -248,37 +296,10 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
 float iRange(float l, float h, float f) { return l+(h-l)*(opt.anim ? 1.0-(cos(gl.time*f)*0.5+0.5) : 0.0); }
 float iRange(float l, float h) { return iRange(l, h, 1.0); }
 
-// 00     00   0000000   000000000  
-// 000   000  000   000     000     
-// 000000000  000000000     000     
-// 000 0 000  000   000     000     
-// 000   000  000   000     000     
-
-struct Mat {
-    float hue;
-    float sat;
-    float lum;
-    float shiny;
-    float glossy;
-};
-
-//  0000000  0000000    00000000  
-// 000       000   000  000       
-// 0000000   000   000  000000    
-//      000  000   000  000       
-// 0000000   0000000    000       
-
-struct SDF {
-    float dist;
-    vec3  pos;
-    vec3  color;
-    int   mat;
-} sdf;
-
 #define sdMat(m,d)   if (d < sdf.dist) { sdf.dist = d; sdf.mat = m; }
 #define sdColor(c,d) if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sdf.color = c; }
     
-void sdStart(vec3 p) 
+void sdStart(vec3 p)
 { 
     sdf.dist  = gl.maxDist;
     sdf.pos   = p;

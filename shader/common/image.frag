@@ -102,20 +102,20 @@ float diffuse(vec3 p, vec3 n)
     return clamp(dif, gl.ambient, 1.0);
 }
 
-vec3 getLight(vec3 p, vec3 n, SDF hit)
+vec3 getLight(vec3 p, vec3 n)
 {
     vec3 col;
     
-    switch (hit.mat) 
+    switch (gl.hit.mat) 
     {
-        case -2:    col = hit.color;   break;
+        case -2:    col = gl.hit.color; break;
         case HEAD:  col = vec3(0.1); break;
         case PLANE: col = vec3(0.5); break;
         case NONE:  
         {
-           vec2 guv = gl.frag.xy - iResolution.xy / 2.;
-           float grid = dot(step(mod(guv.xyxy, vec4(10,10,100,100)), vec4(1)), vec4(.5, .5, 1., 1.));
-           col = mix(vec3(.001), vec3(0.02,0.02,0.02), grid);
+           vec2 guv = gl.frag.xy - gl.res / 2.;
+           float grid = dot(step(mod(guv.xyxy, vec4(10,10,100,100)), vec4(1)), vec4(.5, .5, 1, 1));
+           return mix(vec3(.001), vec3(0.01,0.01,0.01), grid);
         }
     }
     
@@ -123,8 +123,8 @@ vec3 getLight(vec3 p, vec3 n, SDF hit)
     
     if (opt.normal || opt.depthb)
     {
-        vec3 nc = opt.normal ? hit.dist >= gl.maxDist ? black : n : white;
-        vec3 zc = opt.depthb ? vec3(1.0-pow(hit.dist/gl.maxDist,0.1)) : white;
+        vec3 nc = opt.normal ? gl.hit.dist >= gl.maxDist ? black : n : white;
+        vec3 zc = opt.depthb ? vec3(pow(1.0-gl.hit.dist/gl.maxDist, 8.0)) : white;
         col = nc*zc;
     }
     else
@@ -143,24 +143,26 @@ vec3 getLight(vec3 p, vec3 n, SDF hit)
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {   
-    opt.rotate = !keyState(KEY_R);
-    opt.anim   =  keyState(KEY_P);
-    opt.occl   =  keyState(KEY_UP);
-    opt.dither = !keyState(KEY_D);
-    opt.normal = !keyState(KEY_X);
-    opt.depthb = !keyState(KEY_Z);
-    opt.colors = !keyState(KEY_L);
-    opt.space  = !keyState(KEY_SPACE);
-    opt.foggy  =  keyState(KEY_F);
-    opt.grid   =  keyState(KEY_G);
+    opt.rotate   = !keyState(KEY_R);
+    opt.anim     =  keyState(KEY_P);
+    opt.occl     =  keyState(KEY_UP);
+    opt.dither   = !keyState(KEY_D);
+    opt.normal   = !keyState(KEY_X);
+    opt.depthb   = !keyState(KEY_Z);
+    opt.colors   = !keyState(KEY_L);
+    opt.space    = !keyState(KEY_SPACE);
+    opt.foggy    =  keyState(KEY_F);
+    opt.grid     =  keyState(KEY_G);
+    opt.vignette = !keyState(KEY_V);
     
     initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame);
     gl.light1 = (vy*3.0 + vx)*iRange(5.0,8.0);
     gl.ambient       = 0.1; // iRange(0.0,0.1);
     gl.shadow.bright = 0.5; // iRange(0.2,0.8);
     gl.shadow.power  = 5.0; // iRange(2.0, 8.0);
-    gl.shadow.soft   = 0.4; // iRange(0.0,1.0);
-    gl.maxDist = 100.0;
+    gl.shadow.soft   = 0.0; // iRange(0.0,1.0);
+    gl.maxDist       = 50.0;
+    gl.maxSteps      = 256;
                 
     float mx = 2.0*(iMouse.x/iResolution.x-0.5);
     float my = 2.0*(iMouse.y/iResolution.y-0.5);
@@ -173,48 +175,32 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     }
     
     initCam(v0, 25.0, mx, my);
-    
-    gl.uv = (2.0*fragCoord-iResolution.xy)/iResolution.y;
-    vec3 rd = normalize(gl.uv.x*cam.x + gl.uv.y*cam.up + cam.fov*cam.dir);
-    
-    float d = march(cam.pos, rd);
-    SDF hit = sdf;
-    
-    vec3 p = cam.pos + d * rd;
-    vec3 n = getNormal(p);
         
-    vec3 col = getLight(p, n, hit);
-
-    if (opt.dither)
-    {
-        float dit = gradientNoise(fragCoord.xy);
-        col += vec3(dit/1024.0);
-    }
+    march(cam.pos, fragCoord);
     
-    col = mix(col, blue,   print(0,  0,  iFrameRate));
-    col = mix(col, red,    print(0,  1,  iTime     ));
-    col = mix(col, yellow, print(0,  2,  iTimeDelta*1000.0));
-    col = mix(col, red,    print(0,  3,  iMouse.x  ));
-    col = mix(col, green,  print(10, 3,  iMouse.y  ));
-    col = mix(col, green,  print(0,  4,  my        ));
-    col = mix(col, red,    print(10, 4,  mx        ));
-
-    if (iMouse.z > 0.0)
+    vec3 col = getLight(gl.hit.pos, gl.hit.normal);
+    
+    if (gl.ifrag.x < 30*text.size.x && gl.ifrag.y > gl.ires.y-4*text.size.y)
     {
-        gl.uv = (iMouse.xy-.5*iResolution.xy)/iResolution.y;
-        rd = normalize(gl.uv.x*cam.x + gl.uv.y*cam.up + cam.fov*cam.dir);
-        
-        d = march(cam.pos, rd);
-        if (d < gl.maxDist)
+        col *= 0.1;
+        col = mix(col, yellow, print(0,  0,  iFrameRate));
+        col = mix(col, blue,   print(0,  1,  iTime     ));
+        col = mix(col, red,    print(10, 0,  vec2(iMouse.x, mx)));
+        col = mix(col, green,  print(10, 1,  vec2(iMouse.y, my)));
+
+        if (iMouse.z > 0.0)
         {
-            p = cam.pos + d * rd;
-            col = mix(col, white, print(30, 0, d   ));
-            col = mix(col, red,   print(30, 3, p.x ));
-            col = mix(col, green, print(30, 2, p.y ));
-            col = mix(col, blue,  print(30, 1, p.z ));
+            march(cam.pos, iMouse.xy);
+            
+            if (gl.hit.dist < gl.maxDist)
+            {
+                col = mix(col, white, print(0,  2, gl.hit.dist));
+                col = mix(col, red,   print(0,  3, gl.hit.pos.x ));
+                col = mix(col, green, print(10, 3, gl.hit.pos.y ));
+                col = mix(col, blue,  print(20, 3, gl.hit.pos.z ));
+            }
         }
     }
     
-    col = pow(col, vec3(1.0/2.2));
-    fragColor = vec4(col, 1.0);
+    fragColor = postProc(col, opt.dither, !opt.depthb, opt.vignette);
 }
