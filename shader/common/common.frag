@@ -1,12 +1,12 @@
-#define keys(x,y)  texelFetch(iChannel0, ivec2(x,y), 0)
 
 #define KEYS \
-bool keyState(int key) { return keys(key, 2).x < 0.5; } \
-bool keyDown(int key)  { return keys(key, 0).x > 0.5; } 
+vec4 keys(int x, int y) { return texelFetch(iChannel0, ivec2(x,y), 0); } \
+bool keyState(int key)  { return keys(key, 2).x < 0.5; } \
+bool keyDown(int key)   { return keys(key, 0).x > 0.5; } 
 
 #define TIME \
-float iRange(float l, float h, float f) { return l+(h-l)*(sin(iTime)*0.5+0.5); } \
-float iRange(float l, float h) { return iRange(l,h,1.0); }
+float iRange(float l, float h, float f) { return l+(h-l)*(opt.anim ? 1.0-(cos(iTime*f)*0.5+0.5) : 0.0); } \
+float iRange(float l, float h) { return iRange(l, h, 1.0); }
 
 // 000   000   0000000   00000000   00     00   0000000   000      
 // 0000  000  000   000  000   000  000   000  000   000  000      
@@ -37,25 +37,24 @@ vec3 getNormal(vec3 p)                                                   \
 float march(vec3 ro, vec3 rd)                                            \
 {                                                                        \
     gl.pass = PASS_MARCH;                                                \
-    float dz = 0.0;                                                      \
-    for (int i = gl.zero; i < MAX_STEPS; i++)                            \
+    float t = 0.0;                                                       \
+    for (int i = gl.zero; i < gl.maxSteps; i++)                          \
     {                                                                    \
-        vec3 p = ro + dz * rd;                                           \
-        float d = map(p);                                                \
-        dz += d;                                                         \
-        if (d < MIN_DIST)  return dz;                                    \
-        if (dz > MAX_DIST) break;                                        \
+        float d = map(ro+t*rd);                                          \
+        t += d;                                                          \
+        if (d < gl.minDist) return t;                                    \
+        if (t > gl.maxDist) break;                                       \
     }                                                                    \
     sdf.mat = NONE;                                                      \
-    return dz;                                                           \
+    return t;                                                            \
 }
 
 #define PI   3.141592653589
 #define PI2  1.570796326795
 #define TAU  6.283185307178
 #define E    2.718281828459
-#define EPS  0.000000000001
 #define PHI  1.618033988750
+#define EPS  0.000000000001
 #define EPS1 1.00001
 
 #define KEY_LEFT  37
@@ -64,21 +63,40 @@ float march(vec3 ro, vec3 rd)                                            \
 #define KEY_DOWN  40
 #define KEY_SPACE 32
 #define KEY_1     49
+#define KEY_2     50
+#define KEY_3     51
+#define KEY_4     52
+#define KEY_5     53
+#define KEY_6     54
+#define KEY_7     55
+#define KEY_8     56
 #define KEY_9     57
+#define KEY_0     58
 #define KEY_A     65
+#define KEY_B     66
 #define KEY_C     67
 #define KEY_D     68
 #define KEY_E     69
 #define KEY_F     70
+#define KEY_G     71
+#define KEY_H     72
+#define KEY_I     73
+#define KEY_J     74
+#define KEY_K     75
 #define KEY_L     76
+#define KEY_M     77
 #define KEY_N     78
 #define KEY_O     79
 #define KEY_P     80
 #define KEY_Q     81
 #define KEY_R     82
 #define KEY_S     83
+#define KEY_T     84
+#define KEY_U     85
+#define KEY_V     86
 #define KEY_W     87
 #define KEY_X     88
+#define KEY_Y     89
 #define KEY_Z     90
 
 #define PASS_MARCH   0
@@ -99,34 +117,59 @@ const vec3 black  = vec3(0.0,0.0,0.0);
 const vec3 yellow = vec3(1.0,1.0,0.0);
 const vec3 orange = vec3(1.0,0.5,0.0);
 
-#define sdMat(m,d)  if (d < sdf.dist) { sdf.dist = d; sdf.mat = m; }
-    
-//  0000000   000       0000000   0000000     0000000   000      
-// 000        000      000   000  000   000  000   000  000      
-// 000  0000  000      000   000  0000000    000000000  000      
-// 000   000  000      000   000  000   000  000   000  000      
-//  0000000   0000000   0000000   0000000    000   000  0000000  
-
-struct Tank {
-    int mat;
-    vec3 pos;
-    vec3 up;
-    vec3 dir;
-    vec3 vel;
-    vec3 turret;
-    vec2 track;
-};
+// 000000000  00000000  000   000  000000000  
+//    000     000        000 000      000     
+//    000     0000000     00000       000     
+//    000     000        000 000      000     
+//    000     00000000  000   000     000     
 
 struct Text {
     ivec2 size;
     ivec2 adv;
 } text;
 
-struct SDF {
-    float dist;
+//  0000000   00000000   000000000  
+// 000   000  000   000     000     
+// 000   000  00000000      000     
+// 000   000  000           000     
+//  0000000   000           000     
+
+struct Opt {
+    bool space; 
+    bool anim; 
+    bool soft; 
+    bool occl; 
+    bool colors; 
+    bool dither;
+    bool grid;
+    bool foggy; 
+    bool rotate; 
+    bool normal; 
+    bool depthb;
+} opt;
+
+//  0000000   0000000   00     00  
+// 000       000   000  000   000  
+// 000       000000000  000000000  
+// 000       000   000  000 0 000  
+//  0000000  000   000  000   000  
+
+struct Cam {
+    vec3  tgt;
     vec3  pos;
-    int   mat;
-} sdf;
+    vec3  pos2tgt;
+    vec3  dir;
+    vec3  up;
+    vec3  x;
+    float dist;
+    float fov;
+} cam;
+
+//  0000000   000       0000000   0000000     0000000   000      
+// 000        000      000   000  000   000  000   000  000      
+// 000  0000  000      000   000  0000000    000000000  000      
+// 000   000  000      000   000  000   000  000   000  000      
+//  0000000   0000000   0000000   0000000    000   000  0000000  
 
 struct Global {
     vec2  uv;
@@ -147,28 +190,16 @@ struct Global {
     float shadow;
     int   zero;
     int   pass;
+    int   maxSteps;
+    float minDist;
+    float maxDist;
 } gl;
 
-struct Cam {
-    vec3  tgt;
-    vec3  pos;
-    vec3  pos2tgt;
-    vec3  dir;
-    vec3  up;
-    vec3  x;
-    float dist;
-    float fov;
-} cam;
-
-struct Mat {
-    float hue;
-    float sat;
-    float lum;
-    float shiny;
-    float glossy;
-};
-
-uniform sampler2D fontChannel;
+// 000  000   000  000  000000000  
+// 000  0000  000  000     000     
+// 000  000 0 000  000     000     
+// 000  000  0000  000     000     
+// 000  000   000  000     000     
 
 void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int frame)
 {
@@ -193,9 +224,54 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
     gl.ifrag  = ivec2(fragCoord);
     gl.uv     = (fragCoord+fragCoord-resolution.xy)/resolution.y;
     
+    gl.zero    = min(frame,0);
+    
     gl.ambient = 0.03;
     gl.shadow  = 0.20;
-    gl.zero    = min(frame,0);
+    
+    gl.maxSteps = 128;
+    gl.minDist  = 0.001;
+    gl.maxDist  = 100.0;
+    
+    cam.fov = PI2;
+}
+
+// 00     00   0000000   000000000  
+// 000   000  000   000     000     
+// 000000000  000000000     000     
+// 000 0 000  000   000     000     
+// 000   000  000   000     000     
+
+struct Mat {
+    float hue;
+    float sat;
+    float lum;
+    float shiny;
+    float glossy;
+};
+
+//  0000000  0000000    00000000  
+// 000       000   000  000       
+// 0000000   000   000  000000    
+//      000  000   000  000       
+// 0000000   0000000    000       
+
+struct SDF {
+    float dist;
+    vec3  pos;
+    vec3  color;
+    int   mat;
+} sdf;
+
+#define sdMat(m,d)   if (d < sdf.dist) { sdf.dist = d; sdf.mat = m; }
+#define sdColor(c,d) if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sdf.color = c; }
+    
+void sdStart(vec3 p) 
+{ 
+    sdf.dist  = gl.maxDist;
+    sdf.pos   = p;
+    sdf.mat   = -1;
+    sdf.color = black;
 }
 
 float powi(int a, int b) { return pow(float(a), float(b)); }
@@ -715,6 +791,19 @@ float sdLink(vec3 a, vec3 b, vec3 n, vec3 r, float uvz)
     return d;
 }
 
+void sdAxes(float r)
+{
+    if (gl.pass == PASS_SHADOW) return; 
+    sdColor(red,   sdCapsule(v0, vx*gl.maxDist, r));
+    sdColor(green, sdCapsule(v0, vy*gl.maxDist, r));
+    sdColor(blue,  sdCapsule(v0, vz*gl.maxDist, r));
+}
+
+void sdFloor(vec3 color, float h)
+{
+    if (cam.pos.y > h) sdColor(color, sdPlane(vy*h, vy));
+}
+
 // 000   000   0000000   000   0000000  00000000  
 // 0000  000  000   000  000  000       000       
 // 000 0 000  000   000  000  0000000   0000000   
@@ -769,33 +858,11 @@ vec3 bumpMap(vec3 p, vec3 nor, float factor)
     return normalize(nor - grad*factor * clamp01(1.0-length(cam.pos-p)/4.0));
 }
 
-// 0000000     0000000    0000000  000   0000000  
-// 000   000  000   000  000       000  000       
-// 0000000    000000000  0000000   000  0000000   
-// 000   000  000   000       000  000       000  
-// 0000000    000   000  0000000   000  0000000   
-
-void basis(vec3 n, out vec3 right, out vec3 front) 
-{
-    if (n.y < -0.999999)
-    {
-        right = -vz;
-        front = -vx;
-    } 
-    else 
-    {
-        float a = 1.0/(1.0+n.y);
-        float b = -n.x*n.z*a;
-        right = vec3(1.0-n.x*n.x*a,-n.x,b);
-        front = vec3(b,-n.z,1.0-n.z*n.z*a);
-    }
-}
-
-//  0000000   0000000   00     00  
-// 000       000   000  000   000  
-// 000       000000000  000000000  
-// 000       000   000  000 0 000  
-//  0000000  000   000  000   000  
+//  0000000   0000000   00     00  00000000  00000000    0000000   
+// 000       000   000  000   000  000       000   000  000   000  
+// 000       000000000  000000000  0000000   0000000    000000000  
+// 000       000   000  000 0 000  000       000   000  000   000  
+//  0000000  000   000  000   000  00000000  000   000  000   000  
 
 void lookAtFrom(vec3 tgt, vec3 pos) 
 { 
@@ -807,6 +874,7 @@ void lookAtFrom(vec3 tgt, vec3 pos)
     cam.up      = normalize(cross(cam.x,cam.dir));
     cam.dist    = length(cam.pos2tgt);
 }
+
 void lookAt  (vec3 tgt) { lookAtFrom(tgt, cam.pos); }
 void lookFrom(vec3 pos) { lookAtFrom(cam.tgt, pos); }
 void lookPan (vec3 pan) { lookAtFrom(cam.tgt+pan, cam.pos+pan); }
@@ -816,6 +884,7 @@ void lookPitch(float ang) {
     cam.dir     = normalize(cam.pos2tgt);
     cam.up      = normalize(cross(cam.x,cam.dir));
 }
+
 void orbitPitch(float pitch)
 {
     cam.pos2tgt = rotAxisAngle(cam.pos2tgt, cam.x, pitch); 
@@ -823,6 +892,7 @@ void orbitPitch(float pitch)
     cam.dir     = normalize(cam.pos2tgt);
     cam.up      = normalize(cross(cam.x,cam.dir));
 }
+
 void orbitYaw(float yaw)
 {
     cam.pos2tgt = rotAxisAngle(cam.pos2tgt, vy, yaw); 
@@ -831,16 +901,16 @@ void orbitYaw(float yaw)
     cam.x       = normalize(cross(cam.dir, vy));
     cam.up      = normalize(cross(cam.x,cam.dir));
 }
+
 void orbit(float pitch, float yaw) 
 {
     orbitYaw(yaw);
     orbitPitch(pitch);
 }
 
-void initCam(float dist, vec2 rot)
+void initCam(vec3 lookAt, float dist, float rotx, float roty)
 {
-    lookAtFrom(v0, rotAxisAngle(rotAxisAngle(vec3(0,0,-dist), -vx, 89.0*rot.y), vy, -90.0*rot.x));
-    cam.fov = PI2; // 4.0;
+    lookAtFrom(lookAt, rotAxisAngle(rotAxisAngle(vec3(0,0,-dist), vx, 89.0*roty), vy, 180.0*rotx));        
 }
 
 // 00000000    0000000    0000000  000000000  

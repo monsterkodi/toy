@@ -6,7 +6,7 @@
    000      0000000      000     
 ###
 
-{ empty, klog, slash } = require 'kxk'
+{ empty, slash } = require 'kxk'
 
 Renderer = require './renderer'
 Effect   = require './effect'
@@ -66,7 +66,7 @@ class Toy
         # @load 'eyeboids'
         # @load 'buffertest'
         # @load 'snowmobile'
-        @load 'grid'
+        @load 'common'
 
     # 00000000   00000000  000   000  0000000    00000000  00000000   
     # 000   000  000       0000  000  000   000  000       000   000  
