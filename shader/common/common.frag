@@ -2,13 +2,13 @@
 #define KEYS \
 vec4 keys(int x, int y) { return texelFetch(iChannel0, ivec2(x,y), 0); } \
 bool keyState(int key)  { return keys(key, 2).x < 0.5; } \
-bool keyDown(int key)   { return keys(key, 0).x > 0.5; } 
+bool keyDown(int key)   { return keys(key, 0).x > 0.5; }
 
-// 000   000   0000000   00000000   00     00   0000000   000      
-// 0000  000  000   000  000   000  000   000  000   000  000      
-// 000 0 000  000   000  0000000    000000000  000000000  000      
-// 000  0000  000   000  000   000  000 0 000  000   000  000      
-// 000   000   0000000   000   000  000   000  000   000  0000000  
+// 000   000   0000000   00000000   00     00   0000000   000
+// 0000  000  000   000  000   000  000   000  000   000  000
+// 000 0 000  000   000  0000000    000000000  000000000  000
+// 000  0000  000   000  000   000  000 0 000  000   000  000
+// 000   000   0000000   000   000  000   000  000   000  0000000
 
 #define NORMAL \
 vec3 getNormal(vec3 p)                                                   \
@@ -23,11 +23,11 @@ vec3 getNormal(vec3 p)                                                   \
     return normalize(n);                                                 \
 }
 
-// 00     00   0000000   00000000    0000000  000   000  
-// 000   000  000   000  000   000  000       000   000  
-// 000000000  000000000  0000000    000       000000000  
-// 000 0 000  000   000  000   000  000       000   000  
-// 000   000  000   000  000   000   0000000  000   000  
+// 00     00   0000000   00000000    0000000  000   000
+// 000   000  000   000  000   000  000       000   000
+// 000000000  000000000  0000000    000       000000000
+// 000 0 000  000   000  000   000  000       000   000
+// 000   000  000   000  000   000   0000000  000   000
 
 #define MARCH \
 void copyHit(float t, vec3 p)                          \
@@ -41,7 +41,7 @@ void copyHit(float t, vec3 p)                          \
 void march(vec3 ro, vec2 uv)                           \
 {                                                      \
     uv = (2.0*uv-gl.res)/gl.res.y;                     \
-    vec3 rd = normalize(uv.x*cam.x + uv.y*cam.up + cam.fov*cam.dir); \
+    vec3 rd = normalize(uv.x*cam.rgt + uv.y*cam.up + cam.fov*cam.dir); \
                                                        \
     gl.pass = PASS_MARCH;                              \
     float t = 0.0;                                     \
@@ -125,43 +125,47 @@ const vec3 black  = vec3(0.0,0.0,0.0);
 const vec3 yellow = vec3(1.0,1.0,0.0);
 const vec3 orange = vec3(1.0,0.5,0.0);
 
-// 000000000  00000000  000   000  000000000  
-//    000     000        000 000      000     
-//    000     0000000     00000       000     
-//    000     000        000 000      000     
-//    000     00000000  000   000     000     
+// 000000000  00000000  000   000  000000000
+//    000     000        000 000      000
+//    000     0000000     00000       000
+//    000     000        000 000      000
+//    000     00000000  000   000     000
 
 struct Text {
     ivec2 size;
     ivec2 adv;
 } text;
 
-//  0000000   00000000   000000000  
-// 000   000  000   000     000     
-// 000   000  00000000      000     
-// 000   000  000           000     
-//  0000000   000           000     
+//  0000000   00000000   000000000
+// 000   000  000   000     000
+// 000   000  00000000      000
+// 000   000  000           000
+//  0000000   000           000
 
 struct Opt {
-    bool space; 
-    bool anim; 
-    bool soft; 
-    bool occl; 
-    bool colors; 
+    bool axes;
+    bool info;
+    bool help;
+    bool space;
+    bool anim;
+    bool soft;
+    bool occl;
+    bool colors;
     bool dither;
     bool grid;
-    bool foggy; 
-    bool rotate; 
-    bool normal; 
+    bool gamma;
+    bool foggy;
+    bool rotate;
+    bool normal;
     bool depthb;
     bool vignette;
 } opt;
 
-//  0000000   0000000   00     00  
-// 000       000   000  000   000  
-// 000       000000000  000000000  
-// 000       000   000  000 0 000  
-//  0000000  000   000  000   000  
+//  0000000   0000000   00     00
+// 000       000   000  000   000
+// 000       000000000  000000000
+// 000       000   000  000 0 000
+//  0000000  000   000  000   000
 
 struct Cam {
     vec3  tgt;
@@ -169,16 +173,16 @@ struct Cam {
     vec3  pos2tgt;
     vec3  dir;
     vec3  up;
-    vec3  x;
+    vec3  rgt;
     float dist;
     float fov;
 } cam;
 
-//  0000000  000   000   0000000   0000000     0000000   000   000  
-// 000       000   000  000   000  000   000  000   000  000 0 000  
-// 0000000   000000000  000000000  000   000  000   000  000000000  
-//      000  000   000  000   000  000   000  000   000  000   000  
-// 0000000   000   000  000   000  0000000     0000000   00     00  
+//  0000000  000   000   0000000   0000000     0000000   000   000
+// 000       000   000  000   000  000   000  000   000  000 0 000
+// 0000000   000000000  000000000  000   000  000   000  000000000
+//      000  000   000  000   000  000   000  000   000  000   000
+// 0000000   000   000  000   000  0000000     0000000   00     00
 
 struct Shadow {
     float soft;
@@ -186,11 +190,17 @@ struct Shadow {
     float bright;
 };
 
-// 00     00   0000000   000000000  
-// 000   000  000   000     000     
-// 000000000  000000000     000     
-// 000 0 000  000   000     000     
-// 000   000  000   000     000     
+struct Fog {
+    float near;
+    float far;
+    vec3  color;
+} fog;
+
+// 00     00   0000000   000000000
+// 000   000  000   000     000
+// 000000000  000000000     000
+// 000 0 000  000   000     000
+// 000   000  000   000     000
 
 struct Mat {
     float hue;
@@ -200,11 +210,11 @@ struct Mat {
     float glossy;
 };
 
-//  0000000  0000000    00000000  
-// 000       000   000  000       
-// 0000000   000   000  000000    
-//      000  000   000  000       
-// 0000000   0000000    000       
+//  0000000  0000000    00000000
+// 000       000   000  000
+// 0000000   000   000  000000
+//      000  000   000  000
+// 0000000   0000000    000
 
 struct SDF {
     vec3  pos;
@@ -214,11 +224,11 @@ struct SDF {
     int   mat;
 } sdf;
 
-//  0000000   000       0000000   0000000     0000000   000      
-// 000        000      000   000  000   000  000   000  000      
-// 000  0000  000      000   000  0000000    000000000  000      
-// 000   000  000      000   000  000   000  000   000  000      
-//  0000000   0000000   0000000   0000000    000   000  0000000  
+//  0000000   000       0000000   0000000     0000000   000
+// 000        000      000   000  000   000  000   000  000
+// 000  0000  000      000   000  0000000    000000000  000
+// 000   000  000      000   000  000   000  000   000  000
+//  0000000   0000000   0000000   0000000    000   000  0000000
 
 struct Global {
     vec2   uv;
@@ -247,23 +257,23 @@ struct Global {
     SDF    hit;
 } gl;
 
-// 000  000   000  000  000000000  
-// 000  0000  000  000     000     
-// 000  000 0 000  000     000     
-// 000  000  0000  000     000     
-// 000  000   000  000     000     
+// 000  000   000  000  000000000
+// 000  0000  000  000     000
+// 000  000 0 000  000     000
+// 000  000  0000  000     000
+// 000  000   000  000     000
 
 void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int frame)
-{   
+{
     gl.maxSteps = 128;
     gl.minDist  = 0.001;
     gl.maxDist  = 100.0;
-    
+
     gl.ambient       = 0.03;
-    gl.shadow.bright = 0.5;
+    gl.shadow.bright = 0.6;
     gl.shadow.power  = 4.0;
-    gl.shadow.soft   = 0.2;
-    
+    gl.shadow.soft   = 0.0;
+
     gl.res    = resolution.xy;
     gl.ires   = ivec2(gl.res);
     gl.frag   = fragCoord;
@@ -273,7 +283,7 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
     gl.time   = time;
     gl.uv     = (fragCoord+fragCoord-gl.res)/gl.res.y;
     gl.zero   = min(frame,0);
-    
+
     mouse.xy = min(mouse.xy,resolution.xy);
     if (mouse.z < 1.0)
     {
@@ -283,13 +293,19 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
             gl.mouse = mouse.xy;
     }
     else gl.mouse = mouse.xy;
-    
-    gl.mp     = (2.0*abs(gl.mouse)-vec2(gl.res))/gl.res.y;    
- 
+
+    gl.mp     = (2.0*abs(gl.mouse)-vec2(gl.res))/gl.res.y;
+
     int tw    = 4*clamp(gl.ires.y/256,1,8);
     text.size = ivec2(tw,tw*2);
     text.adv  = ivec2(text.size.x,0);
-    
+
+    gl.light1 = (vy*2.0 + vx + vz)*10.0;
+
+    fog.color = vec3(0.5);
+    fog.near  = 0.5;
+    fog.far   = 1.0;
+
     cam.fov = PI2;
 }
 
@@ -298,9 +314,9 @@ float iRange(float l, float h) { return iRange(l, h, 1.0); }
 
 #define sdMat(m,d)   if (d < sdf.dist) { sdf.dist = d; sdf.mat = m; }
 #define sdColor(c,d) if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sdf.color = c; }
-    
+
 void sdStart(vec3 p)
-{ 
+{
     sdf.dist  = gl.maxDist;
     sdf.pos   = p;
     sdf.mat   = -1;
@@ -312,17 +328,17 @@ float log10(float a) { return log(a)/log(10.0); }
 float clamp01(float v) { return clamp(v, 0.0, 1.0); }
 vec3  clamp01(vec3 v) { return clamp(v, 0.0, 1.0); }
 
-// 00000000   00000000   000  000   000  000000000  
-// 000   000  000   000  000  0000  000     000     
-// 00000000   0000000    000  000 0 000     000     
-// 000        000   000  000  000  0000     000     
-// 000        000   000  000  000   000     000     
+// 00000000   00000000   000  000   000  000000000
+// 000   000  000   000  000  0000  000     000
+// 00000000   0000000    000  000 0 000     000
+// 000        000   000  000  000  0000     000
+// 000        000   000  000  000   000     000
 
 #define PRINT \
 float print(ivec2 pos, int ch)                                                  \
 {                                                                               \
     pos *= text.size;                                                           \
-    pos.y = gl.ires.y - pos.y - text.size.y; \
+    pos.y = gl.ires.y - pos.y - text.size.y;                                    \
     ivec2 r = gl.ifrag-pos;                                                     \
     bool i = r.y>0 && r.x>0 && r.x<=text.size.y && r.y<=text.size.y;            \
     return i ? texelFetch(iChannel2,                                            \
@@ -379,13 +395,14 @@ float print(int x, int y, int v)   { return print(ivec2(x,y), float(v)); }      
 float print(int x, int y, vec4 v)  { return print(ivec2(x,y), v); }             \
 float print(int x, int y, vec3 v)  { return print(ivec2(x,y), v); }             \
 float print(int x, int y, vec2 v)  { return print(ivec2(x,y), v); }             \
-float print(int x, int y, ivec3 v) { return print(ivec2(x,y), vec3(v)); }        
+float print(int x, int y, ivec3 v) { return print(ivec2(x,y), vec3(v)); }       \
+float print(int x, int y, bool v)  { return print(ivec2(x,y), float(v)); }
 
-// 000   000   0000000    0000000  000   000  
-// 000   000  000   000  000       000   000  
-// 000000000  000000000  0000000   000000000  
-// 000   000  000   000       000  000   000  
-// 000   000  000   000  0000000   000   000  
+// 000   000   0000000    0000000  000   000
+// 000   000  000   000  000       000   000
+// 000000000  000000000  0000000   000000000
+// 000   000  000   000       000  000   000
+// 000   000  000   000  0000000   000   000
 
 float hash11(float p)
 {
@@ -419,11 +436,11 @@ float gradientNoise(vec2 v)
     return fract(52.9829189 * fract(dot(v, vec2(0.06711056, 0.00583715))));
 }
 
-// 000   000   0000000  000      
-// 000   000  000       000      
-// 000000000  0000000   000      
-// 000   000       000  000      
-// 000   000  0000000   0000000  
+// 000   000   0000000  000
+// 000   000  000       000
+// 000000000  0000000   000
+// 000   000       000  000
+// 000   000  0000000   0000000
 
 vec3 hsl2rgb( in vec3 c )
 {
@@ -439,8 +456,8 @@ vec3 rgb2hsl(vec3 col)
     float maxc = max( col.r, max(col.g, col.b) );
     vec3  mask = step(col.grr,col.rgb) * step(col.bbg,col.rgb);
     vec3 h = mask * (vec3(0.0,2.0,4.0) + (col.gbr-col.brg)/(maxc-minc + EPS)) / 6.0;
-    return vec3( fract( 1.0 + h.x + h.y + h.z ),              
-                 (maxc-minc)/(1.0-abs(minc+maxc-1.0) + EPS),  
+    return vec3( fract( 1.0 + h.x + h.y + h.z ),
+                 (maxc-minc)/(1.0-abs(minc+maxc-1.0) + EPS),
                  (minc+maxc)*0.5);
 }
 
@@ -455,13 +472,13 @@ vec3 gray(vec3 col)
     return colsat(col, 0.0);
 }
 
-// 00     00   0000000   000000000  00000000   000  000   000  
-// 000   000  000   000     000     000   000  000   000 000   
-// 000000000  000000000     000     0000000    000    00000    
-// 000 0 000  000   000     000     000   000  000   000 000   
-// 000   000  000   000     000     000   000  000  000   000  
+// 00     00   0000000   000000000  00000000   000  000   000
+// 000   000  000   000     000     000   000  000   000 000
+// 000000000  000000000     000     0000000    000    00000
+// 000 0 000  000   000     000     000   000  000   000 000
+// 000   000  000   000     000     000   000  000  000   000
 
-mat3 alignMatrix(vec3 dir) 
+mat3 alignMatrix(vec3 dir)
 {
     vec3 f = normalize(dir);
     vec3 s = normalize(cross(f, vec3(0.48, 0.6, 0.64)));
@@ -469,7 +486,7 @@ mat3 alignMatrix(vec3 dir)
     return mat3(u, s, f);
 }
 
-mat3 alignMatrix(vec3 right, vec3 up) 
+mat3 alignMatrix(vec3 right, vec3 up)
 {
     // vec3 f = normalize(dir);
     // vec3 s = normalize(cross(f, vec3(0.48, 0.6, 0.64)));
@@ -477,11 +494,11 @@ mat3 alignMatrix(vec3 right, vec3 up)
     return mat3(right, up, cross(right,up));
 }
 
-// 00000000    0000000   000000000  
-// 000   000  000   000     000     
-// 0000000    000   000     000     
-// 000   000  000   000     000     
-// 000   000   0000000      000     
+// 00000000    0000000   000000000
+// 000   000  000   000     000
+// 0000000    000   000     000
+// 000   000  000   000     000
+// 000   000   0000000      000
 
 float rad2deg(float r) { return 180.0 * r / PI; }
 float deg2rad(float d) { return PI * d / 180.0; }
@@ -494,7 +511,7 @@ mat3  rotMat(vec3 u, float angle)
     float s = sin(deg2rad(angle));
     float c = cos(deg2rad(angle));
     float i = 1.0-c;
-    
+
     return mat3(
         c+u.x*u.x*i, u.x*u.y*i-u.z*s, u.x*u.z*i+u.y*s,
         u.y*u.x*i+u.z*s, c+u.y*u.y*i, u.y*u.z*i-u.x*s,
@@ -508,11 +525,11 @@ vec3 rotAxisAngle(vec3 position, vec3 axis, float angle)
     return m * position;
 }
 
-// 00000000    0000000   000       0000000   00000000   
-// 000   000  000   000  000      000   000  000   000  
-// 00000000   000   000  000      000000000  0000000    
-// 000        000   000  000      000   000  000   000  
-// 000         0000000   0000000  000   000  000   000  
+// 00000000    0000000   000       0000000   00000000
+// 000   000  000   000  000      000   000  000   000
+// 00000000   000   000  000      000000000  0000000
+// 000        000   000  000      000   000  000   000
+// 000         0000000   0000000  000   000  000   000
 
 vec3 polar(vec3 v)
 {
@@ -548,25 +565,25 @@ vec3 unpolar2(vec3 v)
     return vec3(x, y, z)*v.z;
 }
 
-//  0000000   000   000   0000000   000000000  
-// 000   000  000   000  000   000     000     
-// 000 00 00  000   000  000000000     000     
-// 000 0000   000   000  000   000     000     
-//  00000 00   0000000   000   000     000     
+//  0000000   000   000   0000000   000000000
+// 000   000  000   000  000   000     000
+// 000 00 00  000   000  000000000     000
+// 000 0000   000   000  000   000     000
+//  00000 00   0000000   000   000     000
 
 vec4 quatAxisAngle(vec3 axis, float angle)
-{ 
+{
     float half_angle = deg2rad(angle*0.5);
     return vec4(axis*sin(half_angle), cos(half_angle));
 }
 
 vec4 quatConj(vec4 q)
-{ 
-    return vec4(-q.x, -q.y, -q.z, q.w); 
+{
+    return vec4(-q.x, -q.y, -q.z, q.w);
 }
-  
+
 vec4 quatMul(vec4 q1, vec4 q2)
-{ 
+{
     vec4 qr;
     qr.x = (q1.w * q2.x) + (q1.x * q2.w) + (q1.y * q2.z) - (q1.z * q2.y);
     qr.y = (q1.w * q2.y) - (q1.x * q2.z) + (q1.y * q2.w) + (q1.z * q2.x);
@@ -576,13 +593,13 @@ vec4 quatMul(vec4 q1, vec4 q2)
 }
 
 vec3 rotAxisAngleQuat(vec3 p, vec3 axis, float angle)
-{ 
+{
     vec4 qr = quatAxisAngle(axis, angle);
     return quatMul(quatMul(qr, vec4(p, 0)), quatConj(qr)).xyz;
 }
 
 vec3 rotRayAngle(vec3 p, vec3 ro, vec3 rd, float angle)
-{ 
+{
     return rotAxisAngle(p-ro, rd-ro, angle)+ro;
 }
 
@@ -610,11 +627,11 @@ vec3 rotZ(vec3 v, float d)
     return vec3(v.x*c+v.y*s, v.y*c+v.x*s, v.z);
 }
 
-//  0000000   00000000   0000000   00     00    
-// 000        000       000   000  000   000    
-// 000  0000  0000000   000   000  000000000    
-// 000   000  000       000   000  000 0 000    
-//  0000000   00000000   0000000   000   000    
+//  0000000   00000000   0000000   00     00
+// 000        000       000   000  000   000
+// 000  0000  0000000   000   000  000000000
+// 000   000  000       000   000  000 0 000
+//  0000000   00000000   0000000   000   000
 
 vec3 posOnPlane(vec3 p, vec3 a, vec3 n)
 {
@@ -641,11 +658,11 @@ bool rayIntersectsSphere(vec3 ro, vec3 rd, vec3 ctr, float r)
     return length(posOnRay(ro, rd, ctr) - ctr) < r;
 }
 
-//  0000000   00000000   
-// 000   000  000   000  
-// 000   000  00000000   
-// 000   000  000        
-//  0000000   000        
+//  0000000   00000000
+// 000   000  000   000
+// 000   000  00000000
+// 000   000  000
+//  0000000   000
 
 float opUnion(float d1, float d2, float k)
 {
@@ -653,15 +670,15 @@ float opUnion(float d1, float d2, float k)
     return mix(d2, d1, h) - k*h*(1.0-h);
 }
 
-float opDiff(float d1, float d2, float k) 
+float opDiff(float d1, float d2, float k)
 {
     float h = clamp(0.5 - 0.5*(d2+d1)/k, 0.0, 1.0);
     return mix(d1, -d2, h) + k*h*(1.0-h);
 }
 
-float opInter(float d1, float d2, float k) 
+float opInter(float d1, float d2, float k)
 {
-    
+
     float h = clamp(0.5 - 0.5*(d2-d1)/k, 0.0, 1.0);
     return mix(d2, d1, h) + k*h*(1.0-h);
 }
@@ -670,11 +687,11 @@ float opDiff (float d1, float d2) { return opDiff (d1, d2, 0.0); }
 float opUnion(float d1, float d2) { return opUnion(d1, d2, 0.5); }
 float opInter(float d1, float d2) { return opInter(d1, d2, 0.2); }
 
-//  0000000  0000000    
-// 000       000   000  
-// 0000000   000   000  
-//      000  000   000  
-// 0000000   0000000    
+//  0000000  0000000
+// 000       000   000
+// 0000000   000   000
+//      000  000   000
+// 0000000   0000000
 
 float sdSphere(vec3 a, float r)
 {
@@ -690,12 +707,12 @@ float sdPill(vec3 a, float r, vec3 n)
 }
 
 float sdPlane(vec3 a, vec3 n)
-{   
+{
     return dot(n, sdf.pos-a);
 }
 
 float sdPlane(vec3 n)
-{   
+{
     return dot(n, sdf.pos);
 }
 
@@ -749,7 +766,7 @@ float sdCone(vec3 a, vec3 b, float r1, float r2)
     float t = dot(ab,ap) / dot(ab,ab);
     t = clamp(t, 0.0, 1.0);
     vec3 c = a + t*ab;
-    return length(sdf.pos-c)-(t*r2+(1.0-t)*r1);      
+    return length(sdf.pos-c)-(t*r2+(1.0-t)*r1);
 }
 
 float sdLine(vec3 a, vec3 n, float r)
@@ -778,7 +795,7 @@ float sdCapsule(vec3 a, vec3 b, float r)
     float t = dot(ab,ap) / dot(ab,ab);
     t = clamp(t, 0.0, 1.0);
     vec3 c = a + t*ab;
-    return length(sdf.pos-c)-r;        
+    return length(sdf.pos-c)-r;
 }
 
 float sdCylinder(vec3 a, vec3 b, float r, float cr)
@@ -832,7 +849,7 @@ float sdLink(vec3 a, vec3 b, vec3 n, vec3 r, float uvz)
     p -= vec3(0,0,clamp(p.z,-r.y, r.y)); // elongate
     vec3 q = vec3(p.x, max(abs(p.y)-lab,0.0), p.z); // stretch up
     float d = length(vec2(length(q.xy)-r.x,q.z)) - r.z;
-    if (d < sdf.dist && gl.pass == PASS_MARCH) 
+    if (d < sdf.dist && gl.pass == PASS_MARCH)
     {
         float uvy = abs(length(q.xy)-r.x)/r.z;
         if (q.y == 0.0)
@@ -845,7 +862,7 @@ float sdLink(vec3 a, vec3 b, vec3 n, vec3 r, float uvz)
 
 void sdAxes(float r)
 {
-    if (gl.pass == PASS_SHADOW) return; 
+    if (!opt.axes || gl.pass == PASS_SHADOW) return;
     sdColor(red,   sdCapsule(v0, vx*gl.maxDist, r));
     sdColor(green, sdCapsule(v0, vy*gl.maxDist, r));
     sdColor(blue,  sdCapsule(v0, vz*gl.maxDist, r));
@@ -856,28 +873,28 @@ void sdFloor(vec3 color, float h)
     if (cam.pos.y > h) sdColor(color, sdPlane(vy*h, vy));
 }
 
-// 000   000   0000000   000   0000000  00000000  
-// 0000  000  000   000  000  000       000       
-// 000 0 000  000   000  000  0000000   0000000   
-// 000  0000  000   000  000       000  000       
-// 000   000   0000000   000  0000000   00000000  
+// 000   000   0000000   000   0000000  00000000
+// 0000  000  000   000  000  000       000
+// 000 0 000  000   000  000  0000000   0000000
+// 000  0000  000   000  000       000  000
+// 000   000   0000000   000  0000000   00000000
 
 float noise3D(in vec3 p)
 {
     const vec3 s = vec3(7, 157, 113);
-    vec3 ip = floor(p); p -= ip; 
+    vec3 ip = floor(p); p -= ip;
     vec4 h = vec4(0., s.yz, s.y + s.z) + dot(ip, s);
-    p = p*p*(3. - 2.*p); 
+    p = p*p*(3. - 2.*p);
     h = mix(fract(sin(h)*43758.5453), fract(sin(h + s.x)*43758.5453), p.x);
     h.xy = mix(h.xz, h.yw, p.y);
     return mix(h.x, h.y, p.z);
 }
 
-// 0000000    000   000  00     00  00000000   
-// 000   000  000   000  000   000  000   000  
-// 0000000    000   000  000000000  00000000   
-// 000   000  000   000  000 0 000  000        
-// 0000000     0000000   000   000  000        
+// 0000000    000   000  00     00  00000000
+// 000   000  000   000  000   000  000   000
+// 0000000    000   000  000000000  00000000
+// 000   000  000   000  000 0 000  000
+// 0000000     0000000   000   000  000
 
 float drawSphere(in vec3 p)
 {
@@ -886,7 +903,7 @@ float drawSphere(in vec3 p)
 
 float cellTile(in vec3 p)
 {
-    vec4 d; 
+    vec4 d;
     d.x = drawSphere(p - vec3(.81, .62, .53)); p.xy = vec2(p.y-p.x, p.y + p.x)*.7071;
     d.y = drawSphere(p - vec3(.39, .2,  .11)); p.yz = vec2(p.z-p.y, p.z + p.y)*.7071;
     d.z = drawSphere(p - vec3(.62, .24, .06)); p.xz = vec2(p.z-p.x, p.z + p.x)*.7071;
@@ -905,56 +922,56 @@ vec3 bumpMap(vec3 p, vec3 nor, float factor)
     const vec2 e = vec2(0.001, 0);
     vec3 grad = (vec3(bumpSurf(p - e.xyy, factor),
                       bumpSurf(p - e.yxy, factor),
-                      bumpSurf(p - e.yyx, factor))-bumpSurf(p, factor))/e.x;                     
-    grad -= nor*dot(nor, grad);          
+                      bumpSurf(p - e.yyx, factor))-bumpSurf(p, factor))/e.x;
+    grad -= nor*dot(nor, grad);
     return normalize(nor - grad*factor * clamp01(1.0-length(cam.pos-p)/4.0));
 }
 
-//  0000000   0000000   00     00  00000000  00000000    0000000   
-// 000       000   000  000   000  000       000   000  000   000  
-// 000       000000000  000000000  0000000   0000000    000000000  
-// 000       000   000  000 0 000  000       000   000  000   000  
-//  0000000  000   000  000   000  00000000  000   000  000   000  
+//  0000000   0000000   00     00  00000000  00000000    0000000
+// 000       000   000  000   000  000       000   000  000   000
+// 000       000000000  000000000  0000000   0000000    000000000
+// 000       000   000  000 0 000  000       000   000  000   000
+//  0000000  000   000  000   000  00000000  000   000  000   000
 
-void lookAtFrom(vec3 tgt, vec3 pos) 
-{ 
+void lookAtFrom(vec3 tgt, vec3 pos)
+{
     cam.tgt     = tgt;
     cam.pos     = pos;
     cam.pos2tgt = cam.tgt-cam.pos;
     cam.dir     = normalize(cam.pos2tgt);
-    cam.x       = normalize(cross(cam.dir, vy));
-    cam.up      = normalize(cross(cam.x,cam.dir));
+    cam.rgt     = normalize(cross(cam.dir, vy));
+    cam.up      = normalize(cross(cam.rgt,cam.dir));
     cam.dist    = length(cam.pos2tgt);
 }
 
 void lookAt  (vec3 tgt) { lookAtFrom(tgt, cam.pos); }
 void lookFrom(vec3 pos) { lookAtFrom(cam.tgt, pos); }
 void lookPan (vec3 pan) { lookAtFrom(cam.tgt+pan, cam.pos+pan); }
-void lookPitch(float ang) { 
-    cam.pos2tgt = rotAxisAngle(cam.pos2tgt, cam.x, ang); 
+void lookPitch(float ang) {
+    cam.pos2tgt = rotAxisAngle(cam.pos2tgt, cam.rgt, ang);
     cam.tgt     = cam.pos + cam.pos2tgt;
     cam.dir     = normalize(cam.pos2tgt);
-    cam.up      = normalize(cross(cam.x,cam.dir));
+    cam.up      = normalize(cross(cam.rgt,cam.dir));
 }
 
 void orbitPitch(float pitch)
 {
-    cam.pos2tgt = rotAxisAngle(cam.pos2tgt, cam.x, pitch); 
+    cam.pos2tgt = rotAxisAngle(cam.pos2tgt, cam.rgt, pitch);
     cam.pos     = cam.tgt - cam.pos2tgt;
     cam.dir     = normalize(cam.pos2tgt);
-    cam.up      = normalize(cross(cam.x,cam.dir));
+    cam.up      = normalize(cross(cam.rgt,cam.dir));
 }
 
 void orbitYaw(float yaw)
 {
-    cam.pos2tgt = rotAxisAngle(cam.pos2tgt, vy, yaw); 
+    cam.pos2tgt = rotAxisAngle(cam.pos2tgt, vy, yaw);
     cam.pos     = cam.tgt - cam.pos2tgt;
     cam.dir     = normalize(cam.pos2tgt);
-    cam.x       = normalize(cross(cam.dir, vy));
-    cam.up      = normalize(cross(cam.x,cam.dir));
+    cam.rgt     = normalize(cross(cam.dir, vy));
+    cam.up      = normalize(cross(cam.rgt,cam.dir));
 }
 
-void orbit(float pitch, float yaw) 
+void orbit(float pitch, float yaw)
 {
     orbitYaw(yaw);
     orbitPitch(pitch);
@@ -962,18 +979,18 @@ void orbit(float pitch, float yaw)
 
 void initCam(vec3 lookAt, float dist, float rotx, float roty)
 {
-    lookAtFrom(lookAt, rotAxisAngle(rotAxisAngle(vec3(0,0,-dist), vx, 89.0*roty), vy, 180.0*rotx));        
+    lookAtFrom(lookAt, rotAxisAngle(rotAxisAngle(vec3(0,0,-dist), vx, 89.0*roty), vy, 180.0*rotx));
 }
 
-// 00000000    0000000    0000000  000000000  
-// 000   000  000   000  000          000     
-// 00000000   000   000  0000000      000     
-// 000        000   000       000     000     
-// 000         0000000   0000000      000     
+// 00000000    0000000    0000000  000000000
+// 000   000  000   000  000          000
+// 00000000   000   000  0000000      000
+// 000        000   000       000     000
+// 000         0000000   0000000      000
 
 vec4 postProc(vec3 col, bool dither, bool gamma, bool vignette)
 {
-    if (dither)   col -= vec3(gradientNoise(gl.frag)/256.0); 
+    if (dither)   col -= vec3(gradientNoise(gl.frag)/256.0);
     if (gamma)    col  = pow(col, vec3(1.0/2.2));
     if (vignette) col *= vec3(smoothstep(1.8, 0.5, length(gl.uv)/max(gl.aspect,1.0)));
     return vec4(col, 1.0);
