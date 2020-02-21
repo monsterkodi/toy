@@ -227,7 +227,7 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
     gl.zero    = min(frame,0);
     
     gl.ambient = 0.03;
-    gl.shadow  = 0.20;
+    gl.shadow  = 0.5;
     
     gl.maxSteps = 128;
     gl.minDist  = 0.001;

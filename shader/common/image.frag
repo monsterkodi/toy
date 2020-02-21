@@ -27,9 +27,10 @@ float map(vec3 p)
     sdFloor(white, -2.0);
     sdAxes(0.1);
     sdMat(HEAD,  sdCube(v0, 1.0, 0.2));
+    // sdMat(HEAD,  sdCube(vy*5.0, 1.0, 0.2));
     sdMat(HEAD,  sdCube(vy*10.0, 1.0, 0.2));
-    // sdMat(HEAD,  sdCube(v0, iRange(1.0, 2.0), iRange(0.0, 2.0)));
-    // sdMat(HEAD,  sdBox(vy*4.0, normalize(vec3(0, iRange(0.0, 2.0), 1.0-iRange(0.0, 2.0))), vx, vec3(iRange(1.0, 1.2)), iRange(0.0, 2.0)));
+    sdMat(HEAD,  sdCube(v0, iRange(1.0, 2.0), iRange(0.0, 2.0)));
+    sdMat(HEAD,  sdBox(vy*5.0, normalize(vec3(0, iRange(0.0, 2.0), 1.0-iRange(0.0, 2.0))), vx, vec3(iRange(1.0, 1.2)), iRange(0.0, 2.0)));
     
     if (gl.pass == PASS_MARCH) sdColor(white, sdSphere(gl.light1, 0.5));
     
@@ -45,11 +46,17 @@ MARCH
 //      000  000   000  000   000  000   000  000   000  000   000  
 // 0000000   000   000  000   000  0000000     0000000   00     00  
 
+float shadowFade(float t, float k, float shade)
+{
+    shade = max(1.0-pow(1.0-t/gl.maxDist, 10.0*k), shade);
+    return gl.shadow + shade * (1.0-gl.shadow);
+}
+
 float shadow(vec3 ro, vec3 lp, vec3 n, float softness)
 {
     gl.pass = PASS_SHADOW; 
     
-    float k = 1.0/softness;
+    float k = softness;
     
     ro += n*gl.minDist*2.0;
     vec3 rd = lp-ro;
@@ -57,22 +64,28 @@ float shadow(vec3 ro, vec3 lp, vec3 n, float softness)
     rd = normalize(rd);
     
     float shade = 1.0;
+    float sd = 0.0;
     for (float t=float(gl.zero); t<far;)
     {
-        float h = map(ro+rd*t);
-        if (h < gl.minDist) return 0.0; // gl.shadow;
+        float d = map(ro+rd*t);
+        if (d < gl.minDist) { shade = 0.0; break; }
         
-        if (softness > 0.0001)
+        if (softness > 0.001)
         {
-            shade = min(shade, h/(t/k));
-            t += min(h, 0.1);
+            if (d/(t*k*0.1) < shade)
+            {
+                sd = t;
+                shade = d/(t*k*0.1);
+            }
+            t += min(d, 0.1);
         }
         else
         {
-            t += h;
+            t += d;
         }
+        
     }
-    return clamp(shade, gl.shadow, 1.0);
+    return shadowFade(sd, k, shade);
 }
 
 // 000      000   0000000   000   000  000000000  
@@ -81,16 +94,16 @@ float shadow(vec3 ro, vec3 lp, vec3 n, float softness)
 // 000      000  000   000  000   000     000     
 // 0000000  000   0000000   000   000     000     
 
-float getLight(vec3 p, vec3 n)
+float diffuse(vec3 p, vec3 n)
 {
     vec3 cr = cross(cam.dir, vec3(0,1,0));
     vec3 up = normalize(cross(cr,cam.dir));
-    vec3 l = normalize(gl.light1-p);
+    vec3 l  = normalize(gl.light1-p);
  
-    float ambient = 0.005;
     float dif = clamp(dot(n,l), 0.0, 1.0);
-    dif *= shadow(p, gl.light1, n, iRange(0.0, 1.0, 0.1));
-    // dif *= shadow(p, gl.light1, n, 0.0);
+    dif *= shadow(p, gl.light1, n, iRange(0.0, 1.0, 0.5));
+    
+    float ambient = 0.005;
     return clamp(dif, ambient, 1.0);
 }
 
@@ -121,7 +134,7 @@ vec3 getLight(vec3 p, vec3 n, SDF hit)
     }
     else
     {
-        col *= getLight(p,n);
+        col *= diffuse(p,n);
     }
     
     return col;
@@ -137,6 +150,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {    
     initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame);
     gl.light1 = (vy + vx)*15.0;
+    gl.shadow = 0.2;
+    gl.maxDist = 100.0;
     
     opt.rotate = !keyState(KEY_R);
     opt.anim   =  keyState(KEY_P);
