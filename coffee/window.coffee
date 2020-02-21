@@ -47,7 +47,6 @@ class MainWin extends win
     onKeyDown: (event) =>
 
         { mod, key, combo, char } = keyinfo.forEvent event
-        # klog mod, key, combo, char, event.which
         
         if event.which < 256 and not event.repeat
             @toy.mEffect.setKeyDown event.which

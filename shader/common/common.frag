@@ -120,10 +120,11 @@ const vec3 vz = vec3(0,0,1);
 const vec3 red    = vec3(0.8,0.0,0.0);
 const vec3 green  = vec3(0.0,0.5,0.0);
 const vec3 blue   = vec3(0.2,0.2,1.0);
-const vec3 white  = vec3(1.0,1.0,1.0);
-const vec3 black  = vec3(0.0,0.0,0.0);
 const vec3 yellow = vec3(1.0,1.0,0.0);
 const vec3 orange = vec3(1.0,0.5,0.0);
+const vec3 white  = vec3(1.0);
+const vec3 gray   = vec3(0.1);
+const vec3 black  = vec3(0.0);
 
 // 000000000  00000000  000   000  000000000
 //    000     000        000 000      000
@@ -150,9 +151,9 @@ struct Opt {
     bool anim;
     bool soft;
     bool occl;
+    bool shadow;
     bool colors;
     bool dither;
-    bool grid;
     bool gamma;
     bool foggy;
     bool rotate;
@@ -461,15 +462,15 @@ vec3 rgb2hsl(vec3 col)
                  (minc+maxc)*0.5);
 }
 
-vec3 colsat(vec3 col, float sat)
+vec3 setsat(vec3 col, float sat)
 {
     vec3 h = rgb2hsl(col);
     return hsl(h.x,sat,h.z);
 }
 
-vec3 gray(vec3 col)
+vec3 desat(vec3 col)
 {
-    return colsat(col, 0.0);
+    return setsat(col, 0.0);
 }
 
 // 00     00   0000000   000000000  00000000   000  000   000

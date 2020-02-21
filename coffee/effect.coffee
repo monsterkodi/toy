@@ -191,9 +191,7 @@ class Effect
     # 000   000  00000000     000     
     
     setKeyDown: (k) ->
-        # klog "setKeyDown #{k}"
-        if @mKeyboard.mData[k + 0 * 256] == 255
-            return
+        return if @mKeyboard.mData[k + 0 * 256] == 255
         @mKeyboard.mData[k + 0 * 256] = 255
         @mKeyboard.mData[k + 1 * 256] = 255
         @mKeyboard.mData[k + 2 * 256] = 255 - (@mKeyboard.mData[k + 2 * 256])

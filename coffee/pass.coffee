@@ -250,24 +250,23 @@ class Pass
     
     setSamplerFilter: (id, str, buffers, cubeBuffers) ->
         
+        filter = switch str
+            when 'linear' then Renderer.FILTER.LINEAR
+            when 'mipmap' then Renderer.FILTER.MIPMAP
+            else               Renderer.FILTER.NONE
+            
         inp = @mInputs[id]
-        filter = Renderer.FILTER.NONE
-        if str == 'linear'
-            filter = Renderer.FILTER.LINEAR
-        if str == 'mipmap'
-            filter = Renderer.FILTER.MIPMAP
-        if inp == null
-        else if inp.mInfo.mType == 'texture'
+        if inp?.mInfo.mType == 'texture'
             if inp.loaded
                 @mRenderer.setSamplerFilter inp.globject, filter, true
-        else if inp.mInfo.mType == 'cubemap'
+        else if inp?.mInfo.mType == 'cubemap'
             if inp.loaded
                 if @mEffect.assetID_to_cubemapBuferID(inp.mInfo.mID) == 0
                     @mRenderer.setSamplerFilter cubeBuffers[id].mTexture[0], filter, true
                     @mRenderer.setSamplerFilter cubeBuffers[id].mTexture[1], filter, true
                 else
                     @mRenderer.setSamplerFilter inp.globject, filter, true
-        else if inp.mInfo.mType == 'buffer'
+        else if inp?.mInfo.mType == 'buffer'
             @mRenderer.setSamplerFilter buffers[inp.id].mTexture[0], filter, true
             @mRenderer.setSamplerFilter buffers[inp.id].mTexture[1], filter, true
     
