@@ -1,8 +1,19 @@
+/*
+ 0000000   0000000   00     00  00     00   0000000   000   000    
+000       000   000  000   000  000   000  000   000  0000  000    
+000       000   000  000000000  000000000  000   000  000 0 000    
+000       000   000  000 0 000  000 0 000  000   000  000  0000    
+ 0000000   0000000   000   000  000   000   0000000   000   000    
+*/
 
 #define KEYS \
 vec4 keys(int x, int y) { return texelFetch(iChannel0, ivec2(x,y), 0); } \
 bool keyState(int key)  { return keys(key, 2).x < 0.5; } \
 bool keyDown(int key)   { return keys(key, 0).x > 0.5; }
+
+#define LOAD \
+vec4 load(int x, int y) { return texelFetch(iChannel1, ivec2(x,y), 0); } \
+void save(int x, int y, vec4 c) { if ((gl.ifrag.x==x) && (gl.ifrag.y==y)) gl.color=c; } 
 
 // 000   000   0000000   00000000   00     00   0000000   000
 // 0000  000  000   000  000   000  000   000  000   000  000
@@ -356,7 +367,8 @@ struct Global {
 
 #define INIT \
     OPTIONS \
-    initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame);
+    initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame); \
+    lookAtFrom(load(0,2).xyz, load(0,3).xyz);
 
 void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int frame)
 {
@@ -391,7 +403,7 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
 
     gl.mp     = (2.0*abs(gl.mouse)-vec2(gl.res))/gl.res.y;
 
-    int tw    = 4*clamp(gl.ires.y/256,1,8);
+    int tw    = clamp(gl.ires.y/64,4,64);
     text.size = ivec2(tw,tw*2);
     text.adv  = ivec2(text.size.x,0);
 
@@ -487,6 +499,9 @@ float print(int x, int y, vec2 v)  { return print(ivec2(x,y), v); }             
 float print(int x, int y, ivec3 v) { return print(ivec2(x,y), vec3(v)); }       \
 float print(int x, int y, ivec2 v) { return print(ivec2(x,y), vec2(v)); }       \
 float print(int x, int y, bool v)  { return print(ivec2(x,y), float(v)); }
+
+#define DBG(y,v) \
+    col = mix(col, white, print(6, y, (v)));
 
 #define print4(c0,v0,c1,v1,c2,v2,c3,v3)  \
     vec3[4]  cs = vec3[4](c0,c1,c2,c3);  \
@@ -1121,7 +1136,9 @@ void lookPitch(float ang) {
 
 void orbitPitch(float pitch)
 {
-    cam.pos2tgt = rotAxisAngle(cam.pos2tgt, cam.rgt, pitch);
+    vec3 p2t = rotAxisAngle(cam.pos2tgt, cam.rgt, pitch);
+    if (abs(dot(normalize(p2t),vy)) > 0.998) return;
+    cam.pos2tgt = p2t;
     cam.pos     = cam.tgt - cam.pos2tgt;
     cam.dir     = normalize(cam.pos2tgt);
     cam.up      = normalize(cross(cam.rgt,cam.dir));

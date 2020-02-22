@@ -1,16 +1,16 @@
 /*
- 0000000   0000000   00     00  00     00   0000000   000   000
-000       000   000  000   000  000   000  000   000  0000  000
-000       000   000  000000000  000000000  000   000  000 0 000
-000       000   000  000 0 000  000 0 000  000   000  000  0000
- 0000000   0000000   000   000  000   000   0000000   000   000
+000  00     00   0000000    0000000   00000000    
+000  000   000  000   000  000        000         
+000  000000000  000000000  000  0000  0000000     
+000  000 0 000  000   000  000   000  000         
+000  000   000  000   000   0000000   00000000    
 */
 
 KEYS
+LOAD
 PRINT
 
-#define HEAD   4
-#define PLANE  5
+#define GRAY   1
 
 // 00     00   0000000   00000000
 // 000   000  000   000  000   000
@@ -24,10 +24,10 @@ float map(vec3 p)
 
     sdFloor(fog.color, -2.0);
     sdAxes(0.1);
-    sdMat(HEAD,  sdCube(v0, 1.0, 0.2));
-    sdMat(HEAD,  sdCube(v0, iRange(1.0, 2.0), iRange(0.0, 2.0)));
-    sdMat(HEAD,  sdBox(vy*5.0, vx, rotAxisAngle(vy, vx, iRange(0.0,360.0)), vec3(iRange(1.5, 1.0)), iRange(0.2, 0.1)));
-    sdMat(HEAD,  sdBox(vy*10.0, rotAxisAngle(vx, vy, iRange(0.0,360.0)), vy, vec3(1), iRange(0.0, 0.5)));
+    sdMat(GRAY,  sdCube(v0, 1.0, 0.2));
+    sdMat(GRAY,  sdCube(v0, iRange(1.0, 2.0), iRange(0.0, 2.0)));
+    sdMat(GRAY,  sdBox(vy*5.0, vx, rotAxisAngle(vy, vx, iRange(0.0,360.0)), vec3(iRange(1.5, 1.0)), iRange(0.2, 0.1)));
+    sdMat(GRAY,  sdBox(vy*10.0, rotAxisAngle(vx, vy, iRange(0.0,360.0)), vy, vec3(1), iRange(0.0, 0.5)));
 
     if (gl.pass == PASS_MARCH) sdColor(white, sdSphere(gl.light1, 0.5));
 
@@ -61,8 +61,7 @@ vec3 getLight(vec3 p, vec3 n)
     switch (gl.hit.mat)
     {
         case -2:    col = gl.hit.color; break;
-        case HEAD:  col = vec3(0.1); break;
-        case PLANE: col = vec3(0.5); break;
+        case GRAY:  col = vec3(0.1); break;
         case NONE:
         {
            vec2 guv = gl.frag.xy - gl.res / 2.;
@@ -97,23 +96,18 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
     INIT
 
-    fog.color   = vec3(0.01);
-
-    float mx = gl.mp.x+0.77;
-    float my = gl.mp.y;
-
-    if (iMouse.z <= 0.0 && opt.rotate)
-    {
-        mx = -iTime/12.0;
-    }
-
-    initCam(v0, 25.0, mx, my);
-
+    fog.color = vec3(0.01);
+    
     march(cam.pos, fragCoord);
 
     vec3 col = getLight(gl.hit.pos, gl.hit.normal);
     if (opt.foggy) col = mix(col, fog.color, smoothstep(gl.maxDist*fog.near, gl.maxDist*fog.far, gl.hit.dist));
-
+    
+    DBG(0,load(0,0))
+    DBG(1,load(0,1))
+    DBG(2,load(0,2))
+    DBG(3,load(0,3))
+    
     INFO
     HELP
     

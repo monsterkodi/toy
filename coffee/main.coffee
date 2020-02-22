@@ -11,6 +11,7 @@
 class Main extends app
 
     @: ->
+        process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = true
         
         dirs = ["#{__dirname}/../shader"]
         dirs = dirs.concat slash.list(dirs[0], type:'dir').filter((p) -> p.type=='dir').map (d) -> d.file
