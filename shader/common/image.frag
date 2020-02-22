@@ -198,13 +198,16 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     vec3 col = getLight(gl.hit.pos, gl.hit.normal);
     if (opt.foggy) col = mix(col, fog.color, smoothstep(gl.maxDist*fog.near, gl.maxDist*fog.far, gl.hit.dist));
 
-    if (opt.info && gl.ifrag.x < 30*text.size.x && gl.ifrag.y > gl.ires.y-4*text.size.y)
+    if (opt.info && gl.ifrag.x < 9*text.size.x && gl.ifrag.y > gl.ires.y-10*text.size.y)
     {
         col *= 0.02;
-        col = mix(col, yellow, print(0,  0,  iFrameRate));
-        col = mix(col, blue,   print(0,  1,  iTime     ));
-        col = mix(col, red,    print(10, 0,  vec2(iMouse.x, mx)));
-        col = mix(col, green,  print(10, 1,  vec2(iMouse.y, my)));
+        
+        col = mix(col, yellow, print(-2, 0, int(iFrameRate) ));
+        col = mix(col, blue,   print(-2, 1, int(iTime)      ));
+        col = mix(col, red,    print(-2, 2, int(iMouse.x)   ));
+        col = mix(col, green,  print(-2, 3, int(iMouse.y)   ));
+        col = mix(col, red,    print(-2, 4, mx              ));
+        col = mix(col, green,  print(-2, 5, my              ));
 
         if (iMouse.z > 0.0)
         {
@@ -212,26 +215,27 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
             if (gl.hit.dist < gl.maxDist)
             {
-                col = mix(col, white, print(0,  2, gl.hit.dist));
-                col = mix(col, red,   print(0,  3, gl.hit.pos.x ));
-                col = mix(col, green, print(10, 3, gl.hit.pos.y ));
-                col = mix(col, blue,  print(20, 3, gl.hit.pos.z ));
+                col = mix(col, white, print(-2, 6, gl.hit.dist  ));
+                col = mix(col, red,   print(-2, 7, gl.hit.pos.x ));
+                col = mix(col, green, print(-2, 8, gl.hit.pos.y ));
+                col = mix(col, blue,  print(-2, 9, gl.hit.pos.z ));
             }
         }
     }
 
-    if (opt.help && gl.ifrag.x < 30*text.size.x && gl.ifrag.y <= gl.ires.y-4*text.size.y)
+    if (opt.help && gl.ifrag.x < 9*text.size.x && gl.ifrag.y <= gl.ires.y-10*text.size.y)
     {
         col *= 0.02;
-        int y = 4;
+        int y = 10;
+        vec3 ct;
+        int[6] iv;
         #define printOpt(o,k,c1,c2,c3,c4) \
-            col = mix(col, o ? white : gray, print(ivec2(0,y), k));  \
-            col = mix(col, o ? white : gray, print(ivec2(2,y), c1)); \
-            col = mix(col, o ? white : gray, print(ivec2(3,y), c2+32)); \
-            col = mix(col, o ? white : gray, print(ivec2(4,y), c3+32)); \
-            col = mix(col, o ? white : gray, print(ivec2(5,y), c4+32)); \
+            iv = int[6](k, 32, c1, c2+32, c3+32, c4+32); \
+            ct = o ? white : gray; \
+            for (int i = gl.zero; i<6; i++) \
+                col = mix(col, ct, print(ivec2(i+1,y), iv[i])); \
             y++
-        
+         
         printOpt(opt.help,     KEY_H, KEY_H, KEY_E, KEY_L, KEY_P);
         printOpt(opt.info,     KEY_I, KEY_I, KEY_N, KEY_F, KEY_O);
         printOpt(opt.axes,     KEY_X, KEY_A, KEY_X, KEY_E, KEY_S);

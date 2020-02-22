@@ -367,27 +367,21 @@ float print(ivec2 pos, float v)                                                 
 float print(ivec2 pos, vec4 v)                                                  \
 {                                                                               \
     float c = 0.0;                                                              \
-    for (int i = 0; i < 4; i++) {                                               \
-        c = max(c, print(pos, v[i]));                                           \
-        pos.x += 8; }                                                           \
+    for (int i = 0; i < 4; i++) { c = max(c, print(pos, v[i])); pos.x += 8; }   \
     return c;                                                                   \
 }                                                                               \
                                                                                 \
 float print(ivec2 pos, vec3 v)                                                  \
 {                                                                               \
     float c = 0.0;                                                              \
-    for (int i = 0; i < 3; i++) {                                               \
-        c = max(c, print(pos, v[i]));                                           \
-        pos.x += 8; }                                                           \
+    for (int i = 0; i < 3; i++) { c = max(c, print(pos, v[i])); pos.x += 8; }   \
     return c;                                                                   \
 }                                                                               \
                                                                                 \
 float print(ivec2 pos, vec2 v)                                                  \
 {                                                                               \
     float c = 0.0;                                                              \
-    for (int i = 0; i < 2; i++) {                                               \
-        c = max(c, print(pos, v[i]));                                           \
-        pos.x += 8; }                                                           \
+    for (int i = 0; i < 2; i++) { c = max(c, print(pos, v[i]));pos.x += 8; }    \
     return c;                                                                   \
 }                                                                               \
                                                                                 \
@@ -397,6 +391,7 @@ float print(int x, int y, vec4 v)  { return print(ivec2(x,y), v); }             
 float print(int x, int y, vec3 v)  { return print(ivec2(x,y), v); }             \
 float print(int x, int y, vec2 v)  { return print(ivec2(x,y), v); }             \
 float print(int x, int y, ivec3 v) { return print(ivec2(x,y), vec3(v)); }       \
+float print(int x, int y, ivec2 v) { return print(ivec2(x,y), vec2(v)); }       \
 float print(int x, int y, bool v)  { return print(ivec2(x,y), float(v)); }
 
 // 000   000   0000000    0000000  000   000

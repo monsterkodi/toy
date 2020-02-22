@@ -6,7 +6,7 @@
 000        000   000  0000000   0000000   
 ###
 
-{ filter } = require 'kxk'
+{ filter, klog, kstr } = require 'kxk'
 Renderer = require './renderer'
 
 class Pass
@@ -159,6 +159,7 @@ class Pass
                 error err
         if not err
             @mCompile = performance.now() - timeStart
+            klog "#{kstr.pad @mType, 8} #{(@mCompile/1000).toFixed(2)}"
         @mSource = shaderCode
         err
     
