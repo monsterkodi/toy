@@ -17,7 +17,7 @@ LOAD
 
 void initCamera()
 {    
-    initCam(v0, 25.0, 0.77, 0.0);
+    initCam(v0, 12.0, 0.77, -0.3);
     
     save(0,2,vec4(cam.tgt,0));
     save(0,3,vec4(cam.pos,0));
@@ -39,23 +39,25 @@ void calcCamera()
     
     orbit(-100.0*(d01.y), 100.0*(d01.x));
     
-    if (opt.rotate) orbitYaw(-0.2);
+    if (opt.rotate) orbitYaw(-0.1);
     
-    if (keyDown(KEY_LEFT))  orbitYaw( 1.0);
-    if (keyDown(KEY_RIGHT)) orbitYaw(-1.0);
-    if (keyDown(KEY_UP))    orbitPitch( 1.0);
-    if (keyDown(KEY_DOWN))  orbitPitch(-1.0);
+    if (keyDown(KEY_LEFT))  orbitYaw(-1.0);
+    if (keyDown(KEY_RIGHT)) orbitYaw( 1.0);
+    if (keyDown(KEY_UP))    orbitPitch(-1.0);
+    if (keyDown(KEY_DOWN))  orbitPitch( 1.0);
     
     vec3 pan;
-    float ps = 0.3;
-    if (keyDown(KEY_W))  pan += ps*cam.dir;
-    if (keyDown(KEY_S))  pan -= ps*cam.dir;
-    if (keyDown(KEY_A))  pan -= ps*cam.rgt;
-    if (keyDown(KEY_D))  pan += ps*cam.rgt;
-    if (keyDown(KEY_Q))  pan -= ps*cam.up;
-    if (keyDown(KEY_E))  pan += ps*cam.up;
+    if (keyDown(KEY_W))  { if (length(cam.pos2tgt)>1.0) { lookZoom(1.0); } else { pan += 0.2*cam.dir; }}
+    if (keyDown(KEY_S))  { lookZoom(-1.0); }
+    if (keyDown(KEY_A))  { lookZoom(0.0); pan -= 0.1*cam.rgt; }
+    if (keyDown(KEY_D))  { lookZoom(0.0); pan += 0.1*cam.rgt; }
+    if (keyDown(KEY_Q))  { lookZoom(0.0); pan -= 0.1*cam.up;  }
+    if (keyDown(KEY_E))  { lookZoom(0.0); pan += 0.1*cam.up;  }
     
     lookPan(pan);
+    
+    if (keyDown(KEY_PGDN)) lookPan(-vy*0.1);
+    if (keyDown(KEY_PGUP)) lookPan( vy*0.1);
     
     save(0,2,vec4(cam.tgt, 0));
     save(0,3,vec4(cam.pos, 0));
@@ -88,7 +90,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     }
     else if (mem.x == 0 && mem.y <= 3)
     {
-        if (iFrame < 1)
+        if (iFrame < 1 || keyDown(KEY_C))
         {
             initCamera();
         }

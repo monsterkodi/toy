@@ -116,7 +116,6 @@ float shadow(vec3 ro, vec3 lp, vec3 n)                   \
     return shadowFade(sd, shade);                        \
 }
 
-
 //  0000000    0000000   0000000  000      000   000   0000000  000   0000000   000   000  
 // 000   000  000       000       000      000   000  000       000  000   000  0000  000  
 // 000   000  000       000       000      000   000  0000000   000  000   000  000 0 000  
@@ -138,6 +137,78 @@ float occlusion(vec3 p, vec3 n)                          \
     float f = clamp01(1.0-a);                            \
     return f*f;                                          \
 }
+
+
+// 000      000   0000000   000   000  000000000
+// 000      000  000        000   000     000
+// 000      000  000  0000  000000000     000
+// 000      000  000   000  000   000     000
+// 0000000  000   0000000   000   000     000
+
+#define LIGHT \
+vec3 calcLight(vec3 p, vec3 n)                    \
+{                                                 \
+    vec3 col;                                     \
+    Mat  mat;                                     \
+    switch (gl.hit.mat)                           \
+    {                                             \
+        case -2: col = gl.hit.color; break;       \
+        case NONE:                                \
+        {                                         \
+           vec2   guv = gl.frag.xy - gl.res / 2.; \
+           float  grid = dot(step(mod(guv.xyxy, vec4(10,10,100,100)), vec4(1)), vec4(.5, .5, 1, 1)); \
+           return mix(vec3(.001), vec3(0.01,0.01,0.01), grid); \
+        }                                                      \
+        default:                                               \
+        {                                                      \
+            mat = material[gl.hit.mat-1];                      \
+            col = hsl(mat.hue, mat.sat, mat.lum);              \
+        }                                                      \
+    }                                                          \
+    col = (opt.colors) ? desat(col) : col;                     \
+    if (opt.normal || opt.depthb)                              \
+    {                                                          \
+        vec3 nc = opt.normal ? gl.hit.dist >= gl.maxDist ? black : n : white;      \
+        vec3 zc = opt.depthb ? vec3(pow(1.0-gl.hit.dist/gl.maxDist, 4.0)) : white; \
+        col = nc*zc;                                           \
+    }                                                          \
+    else                                                       \
+    {                                                          \
+        float dl1 = dot(n,normalize(gl.light1-p));             \
+        float dl2 = dot(n,normalize(gl.light2-p));             \
+        float dnl = max(dl1,dl2*0.98);                         \
+        float dif;                                             \
+        dif  = clamp(dnl, 0.0, 1.0);                           \
+        dif *= shadow(p, gl.light1, n);                        \
+        dif *= occlusion(p, n);                                \
+        dif *= pow(dnl, 1.0+mat.shiny*20.0);                   \
+        dif  = clamp(dif, gl.ambient, 1.0);                    \
+        col *= dif;                                            \
+        col += pow(mat.glossy, 3.0)*vec3(pow(smoothstep(0.0+mat.glossy*0.9, 1.0, dnl), 1.0+40.0*mat.glossy)); \
+    } \
+    return col; \
+}
+
+#define HEADER \
+    KEYS       \
+    LOAD       \
+    PRINT
+
+#define FOOTER \
+    NORMAL     \
+    MARCH      \
+    SHADOW     \
+    OCCLUSION  \
+    LIGHT      \
+               \
+    void mainImage(out vec4 fragColor, in vec2 fragCoord) \
+    {          \
+        INIT   \
+        CALC   \
+        INFO   \
+        HELP   \
+        POST   \
+    }
 
 #define PI   3.141592653589
 #define PI2  1.570796326795
@@ -188,6 +259,10 @@ float occlusion(vec3 p, vec3 n)                          \
 #define KEY_X     88
 #define KEY_Y     89
 #define KEY_Z     90
+#define KEY_MINUS 189
+#define KEY_EQUAL 187
+#define KEY_PGUP  33
+#define KEY_PGDN  34
 
 #define NONE         0
 
@@ -195,6 +270,11 @@ float occlusion(vec3 p, vec3 n)                          \
 #define PASS_NORMAL  1
 #define PASS_SHADOW  2
 #define PASS_AO      3
+
+#define HUE_R 0.0
+#define HUE_G 0.33
+#define HUE_B 0.67
+#define HUE_Y 0.16
 
 const vec3 v0 = vec3(0,0,0);
 const vec3 vx = vec3(1,0,0);
@@ -247,7 +327,7 @@ struct Opt {
 } opt;
 
 #define OPTIONS \
-    opt.rotate   = !keyState(KEY_R);      \
+    opt.rotate   =  keyState(KEY_R);      \
     opt.axes     =  keyState(KEY_X);      \
     opt.info     =  keyState(KEY_I);      \
     opt.help     =  keyState(KEY_H);      \
@@ -261,7 +341,7 @@ struct Opt {
     opt.colors   = !keyState(KEY_K);      \
     opt.space    = !keyState(KEY_SPACE);  \
     opt.foggy    =  keyState(KEY_F);      \
-    opt.vignette = !keyState(KEY_V);
+    opt.vignette =  keyState(KEY_V);
 
 //  0000000   0000000   00     00
 // 000       000   000  000   000
@@ -368,7 +448,8 @@ struct Global {
 #define INIT \
     OPTIONS \
     initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame); \
-    lookAtFrom(load(0,2).xyz, load(0,3).xyz);
+    lookAtFrom(load(0,2).xyz, load(0,3).xyz); \
+    gl.light2 = cam.pos-cam.rgt*5.0+cam.up*5.0;
 
 void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int frame)
 {
@@ -409,7 +490,7 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
 
     gl.light1 = (vy*2.0 + vx + vz)*10.0;
 
-    fog.color = vec3(0.5);
+    fog.color = vec3(0.002);
     fog.near  = 0.5;
     fog.far   = 1.0;
 
@@ -418,9 +499,6 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
 
 float iRange(float l, float h, float f) { return l+(h-l)*(opt.anim ? 1.0-(cos(gl.time*f)*0.5+0.5) : 0.0); }
 float iRange(float l, float h) { return iRange(l, h, 1.0); }
-
-#define sdMat(m,d)   if (d < sdf.dist) { sdf.dist = d; sdf.mat = m; }
-#define sdColor(c,d) if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sdf.color = c; }
 
 void sdStart(vec3 p)
 {
@@ -658,19 +736,8 @@ vec3 desat(vec3 col)
 // 000 0 000  000   000     000     000   000  000   000 000
 // 000   000  000   000     000     000   000  000  000   000
 
-mat3 alignMatrix(vec3 dir)
-{
-    vec3 f = normalize(dir);
-    vec3 s = normalize(cross(f, vec3(0.48, 0.6, 0.64)));
-    vec3 u = cross(s, f);
-    return mat3(u, s, f);
-}
-
 mat3 alignMatrix(vec3 right, vec3 up)
 {
-    // vec3 f = normalize(dir);
-    // vec3 s = normalize(cross(f, vec3(0.48, 0.6, 0.64)));
-    // vec3 u = cross(s, f);
     return mat3(right, up, cross(right,up));
 }
 
@@ -866,6 +933,17 @@ float opInter(float d1, float d2, float k)
 float opDiff (float d1, float d2) { return opDiff (d1, d2, 0.0); }
 float opUnion(float d1, float d2) { return opUnion(d1, d2, 0.5); }
 float opInter(float d1, float d2) { return opInter(d1, d2, 0.2); }
+
+void sdMat(int m, float d) { if (d < sdf.dist) { sdf.dist = d; sdf.mat = m; } }
+void sdUni(int m, float d) { sdMat(m, opUnion(d, sdf.dist, 0.5)); }
+void sdDif(int m, float d) { sdMat(m, opDiff(d, sdf.dist, 0.5)); }
+void sdUni(int m, float f, float d) { sdMat(m, opUnion(d, sdf.dist, f)); }
+void sdInt(int m, float f, float d) { float md = opInter(d-f, sdf.dist, 0.0); if (md <= sdf.dist) { sdf.dist = md; sdf.mat = m; }}
+void sdDif(int m, float f, float d) { float md = opDiff(sdf.dist, d, f); if (md > sdf.dist) { sdf.dist = md; sdf.mat = m; }}
+void sdEmb(int m, float f, float d) { float md = opDiff(sdf.dist, d-f, 0.0); if (md > sdf.dist) { sdf.dist = md; sdf.mat = m; }}
+void sdExt(int m, float f, float d) { float md = opInter(d-f, sdf.dist-f, f); if (md <= sdf.dist) { sdf.dist = md; sdf.mat = m; }}
+
+void sdColor(vec3 c, float d) { if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sdf.color = c; } }
 
 //  0000000  0000000
 // 000       000   000
@@ -1134,6 +1212,20 @@ void lookPitch(float ang) {
     cam.up      = normalize(cross(cam.rgt,cam.dir));
 }
 
+void lookZoom(float z) 
+{ 
+    if (z == 0.0)
+    {
+        cam.tgt = cam.pos + normalize(cam.pos2tgt)*1.0;
+        cam.pos2tgt = cam.tgt-cam.pos;
+    }
+    else
+    {
+        cam.pos2tgt -= z*normalize(cam.pos2tgt)*0.3;
+        cam.pos = cam.tgt-cam.pos2tgt;
+    }
+}
+
 void orbitPitch(float pitch)
 {
     vec3 p2t = rotAxisAngle(cam.pos2tgt, cam.rgt, pitch);
@@ -1177,3 +1269,11 @@ vec4 postProc(vec3 col, bool dither, bool gamma, bool vignette)
     if (vignette) col *= vec3(smoothstep(1.8, 0.5, length(gl.uv)/max(gl.aspect,1.0)));
     return vec4(col, 1.0);
 }
+
+#define CALC \
+    march(cam.pos, fragCoord); \
+    vec3 col = calcLight(gl.hit.pos, gl.hit.normal); \
+    if (opt.foggy) col = mix(col, fog.color, smoothstep(gl.maxDist*fog.near, gl.maxDist*fog.far, gl.hit.dist));
+
+#define POST \
+    fragColor = postProc(col, opt.dither, opt.gamma && !opt.depthb, opt.vignette);
