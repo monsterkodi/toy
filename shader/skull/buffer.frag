@@ -17,7 +17,7 @@ LOAD
 
 void initCamera()
 {    
-    initCam(v0, 40.0, 1.0, -0.3);
+    initCam(-2.0*vy, 40.0, 1.0, -0.4);
     
     save(0,2,vec4(cam.tgt,0));
     save(0,3,vec4(cam.pos,0));
@@ -39,7 +39,7 @@ void calcCamera()
     
     orbit(-100.0*(d01.y), 100.0*(d01.x));
     
-    if (opt.rotate) orbitYaw(-0.1);
+    if (opt.rotate) orbitYaw(iRange(0.15,-0.15,0.2));
     
     if (keyDown(KEY_LEFT))  orbitYaw(-1.0);
     if (keyDown(KEY_RIGHT)) orbitYaw( 1.0);

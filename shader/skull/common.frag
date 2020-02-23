@@ -179,7 +179,7 @@ float occlusion(vec3 p, vec3 n)                          \
 #define KEY_PGUP  33
 #define KEY_PGDN  34
 
-#define NONE         0
+#define NONE         -1
 
 #define PASS_MARCH   0
 #define PASS_NORMAL  1
@@ -242,9 +242,9 @@ struct Opt {
 } opt;
 
 #define OPTIONS \
-    opt.rotate   = !keyState(KEY_R);      \
+    opt.rotate   =  keyState(KEY_R);      \
     opt.axes     = !keyState(KEY_X);      \
-    opt.info     =  keyState(KEY_I);      \
+    opt.info     = !keyState(KEY_I);      \
     opt.help     =  keyState(KEY_H);      \
     opt.shadow   =  keyState(KEY_L);      \
     opt.occl     =  keyState(KEY_O);      \
@@ -312,6 +312,7 @@ struct Mat {
     float lum;
     float shiny;
     float glossy;
+    float emit;
 };
 
 //  0000000  0000000    00000000
@@ -327,6 +328,11 @@ struct SDF {
     float dist;
     int   mat;
 } sdf;
+
+struct Env {
+    float gloss;   // size of glossy
+    vec3  ambient; 
+} env;
 
 //  0000000   000       0000000   0000000     0000000   000
 // 000        000      000   000  000   000  000   000  000
@@ -348,7 +354,6 @@ struct Global {
     int    frame;
     float  time;
     vec3   rd;
-    float  ambient;
     int    zero;
     int    pass;
     int    maxSteps;
@@ -375,7 +380,8 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
     gl.minDist  = 0.001;
     gl.maxDist  = 100.0;
 
-    gl.ambient  = 0.03;
+    env.ambient = vec3(0.03);
+    env.gloss   = 1.0;
 
     gl.res    = resolution.xy;
     gl.ires   = ivec2(gl.res);
@@ -1059,6 +1065,20 @@ void sdAxes(float r)
 void sdFloor(vec3 color, float h)
 {
     if (cam.pos.y > h) sdCol(color, sdPlane(vy*h, vy));
+}
+
+void sdFlex(vec3 color, float h)
+{
+    if (cam.pos.y > h) 
+    {
+        vec3 pp = vy*h;
+        float d = sdPlane(pp, vy);
+        // pp.xz = cam.pos.xz;
+        pp.y += 0.8*0.7*gl.maxDist;
+        //d = min(d, -sdSphere(pp, gl.maxDist*0.99));
+        d = opUnion(d, -sdSphere(pp, gl.maxDist*0.7), gl.maxDist*0.1);
+        sdCol(color, d);
+    }
 }
 
 // 000   000   0000000   000   0000000  00000000
