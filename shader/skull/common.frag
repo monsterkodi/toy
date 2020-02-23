@@ -68,54 +68,6 @@ void march(vec3 ro, vec2 uv)                           \
     gl.hit.dist = gl.maxDist;                          \
 }
 
-//  0000000  000   000   0000000   0000000     0000000   000   000
-// 000       000   000  000   000  000   000  000   000  000 0 000
-// 0000000   000000000  000000000  000   000  000   000  000000000
-//      000  000   000  000   000  000   000  000   000  000   000
-// 0000000   000   000  000   000  0000000     0000000   00     00
-
-#define SHADOW \
-float shadowFade(float t, float shade)                                             \
-{                                                                                  \
-    shade = max(1.0-pow(1.0-t/gl.maxDist, gl.shadow.power*gl.shadow.soft), shade); \
-    return gl.shadow.bright + shade * (1.0-gl.shadow.bright);                      \
-}                                                                                  \
-float shadow(vec3 ro, vec3 lp, vec3 n)                   \
-{                                                        \
-    gl.pass = PASS_SHADOW;                               \
-                                                         \
-    if (!opt.shadow) return 1.0;                         \
-                                                         \
-    ro += n*gl.minDist*2.0;                              \
-    vec3 rd = lp-ro;                                     \
-    float far = max(length(rd), gl.minDist);             \
-    rd = normalize(rd);                                  \
-                                                         \
-    float shade = 1.0;                                   \
-    float sd = 0.0;                                      \
-    for (float t=float(gl.zero); t<far;)                 \
-    {                                                    \
-        float d = map(ro+rd*t);                          \
-        if (d < gl.minDist) { shade = 0.0; break; }      \
-                                                         \
-        if (gl.shadow.soft > 0.01)                       \
-        {                                                \
-            float newShade = d/(t*gl.shadow.soft*0.1);   \
-            if (newShade < shade)                        \
-            {                                            \
-                sd = t;                                  \
-                shade = newShade;                        \
-            }                                            \
-            t += min(d, 0.1);                            \
-        }                                                \
-        else                                             \
-        {                                                \
-            t += d;                                      \
-        }                                                \
-    }                                                    \
-    return shadowFade(sd, shade);                        \
-}
-
 //  0000000    0000000   0000000  000      000   000   0000000  000   0000000   000   000  
 // 000   000  000       000       000      000   000  000       000  000   000  0000  000  
 // 000   000  000       000       000      000   000  0000000   000  000   000  000 0 000  
@@ -136,57 +88,6 @@ float occlusion(vec3 p, vec3 n)                          \
     }                                                    \
     float f = clamp01(1.0-a);                            \
     return f*f;                                          \
-}
-
-
-// 000      000   0000000   000   000  000000000
-// 000      000  000        000   000     000
-// 000      000  000  0000  000000000     000
-// 000      000  000   000  000   000     000
-// 0000000  000   0000000   000   000     000
-
-#define LIGHT \
-vec3 calcLight(vec3 p, vec3 n)                    \
-{                                                 \
-    vec3 col;                                     \
-    Mat  mat;                                     \
-    switch (gl.hit.mat)                           \
-    {                                             \
-        case -2: col = gl.hit.color; break;       \
-        case NONE:                                \
-        {                                         \
-           vec2   guv = gl.frag.xy - gl.res / 2.; \
-           float  grid = dot(step(mod(guv.xyxy, vec4(10,10,100,100)), vec4(1)), vec4(.5, .5, 1, 1)); \
-           return mix(vec3(.001), vec3(0.01,0.01,0.01), grid); \
-        }                                                      \
-        default:                                               \
-        {                                                      \
-            mat = material[gl.hit.mat-1];                      \
-            col = hsl(mat.hue, mat.sat, mat.lum);              \
-        }                                                      \
-    }                                                          \
-    col = (opt.colors) ? desat(col) : col;                     \
-    if (opt.normal || opt.depthb)                              \
-    {                                                          \
-        vec3 nc = opt.normal ? gl.hit.dist >= gl.maxDist ? black : n : white;      \
-        vec3 zc = opt.depthb ? vec3(pow(1.0-gl.hit.dist/gl.maxDist, 4.0)) : white; \
-        col = nc*zc;                                           \
-    }                                                          \
-    else                                                       \
-    {                                                          \
-        float dl1 = dot(n,normalize(gl.light1-p));             \
-        float dl2 = dot(n,normalize(gl.light2-p));             \
-        float dnl = max(dl1,dl2*0.98);                         \
-        float dif;                                             \
-        dif  = clamp(dnl, 0.0, 1.0);                           \
-        dif *= shadow(p, gl.light1, n);                        \
-        dif *= occlusion(p, n);                                \
-        dif *= pow(dnl, 1.0+mat.shiny*20.0);                   \
-        dif  = clamp(dif, gl.ambient, 1.0);                    \
-        col *= dif;                                            \
-        col += pow(mat.glossy, 3.0)*vec3(pow(smoothstep(0.0+mat.glossy*0.9, 1.0, dnl), 1.0+40.0*mat.glossy)); \
-    } \
-    return col; \
 }
 
 #define HEADER \
@@ -213,7 +114,7 @@ vec3 calcLight(vec3 p, vec3 n)                    \
     }
 
 #define SETUP \
-    PRE_MAIN   \
+    /*PRE_MAIN*/   \
     void mainImage(out vec4 fragColor, in vec2 fragCoord) \
     {              \
         INIT       \
@@ -383,7 +284,14 @@ struct Cam {
 struct Shadow {
     float soft;
     float power;
-    float bright;
+    float dark;
+};
+
+struct Light {
+    vec3   pos;
+    vec3   color;
+    float  bright;
+    Shadow shadow;
 };
 
 struct Fog {
@@ -439,9 +347,6 @@ struct Global {
     vec4   color;
     int    frame;
     float  time;
-    vec3   light1;
-    vec3   light2;
-    vec3   light3;
     vec3   rd;
     float  ambient;
     int    zero;
@@ -449,8 +354,8 @@ struct Global {
     int    maxSteps;
     float  minDist;
     float  maxDist;
-    Shadow shadow;
-    SDF    hit;
+    Light[3] light; 
+    SDF      hit;
 } gl;
 
 // 000  000   000  000  000000000
@@ -462,8 +367,7 @@ struct Global {
 #define INIT \
     OPTIONS \
     initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame); \
-    lookAtFrom(load(0,2).xyz, load(0,3).xyz); \
-    gl.light2 = cam.pos-cam.rgt*5.0+cam.up*5.0;
+    lookAtFrom(load(0,2).xyz, load(0,3).xyz); 
 
 void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int frame)
 {
@@ -471,10 +375,7 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
     gl.minDist  = 0.001;
     gl.maxDist  = 100.0;
 
-    gl.ambient       = 0.03;
-    gl.shadow.bright = 0.6;
-    gl.shadow.power  = 4.0;
-    gl.shadow.soft   = 0.0;
+    gl.ambient  = 0.03;
 
     gl.res    = resolution.xy;
     gl.ires   = ivec2(gl.res);
@@ -501,8 +402,6 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
     int tw    = clamp(gl.ires.y/64,4,64);
     text.size = ivec2(tw,tw*2);
     text.adv  = ivec2(text.size.x,0);
-
-    gl.light1 = (vy*2.0 + vx + vz)*10.0;
 
     fog.color = vec3(0.002);
     fog.near  = 0.5;
@@ -962,7 +861,7 @@ void sdDif(int m, float f, float d) { float md = opDiff(sdf.dist, d, f); if (md 
 void sdEmb(int m, float f, float d) { float md = opDiff(sdf.dist, d-f, 0.0); if (md > sdf.dist) { sdf.dist = md; sdf.mat = m; }}
 void sdExt(int m, float f, float d) { float md = opInter(d-f, sdf.dist-f, f); if (md <= sdf.dist) { sdf.dist = md; sdf.mat = m; }}
 
-void sdColor(vec3 c, float d) { if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sdf.color = c; } }
+void sdCol(vec3 c, float d) { if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sdf.color = c; } }
 
 //  0000000  0000000
 // 000       000   000
@@ -1152,14 +1051,14 @@ float sdLink(vec3 a, vec3 b, vec3 n, vec3 r, float uvz)
 void sdAxes(float r)
 {
     if (!opt.axes || gl.pass == PASS_SHADOW) return;
-    sdColor(red,   sdCapsule(v0, vx*gl.maxDist, r));
-    sdColor(green, sdCapsule(v0, vy*gl.maxDist, r));
-    sdColor(blue,  sdCapsule(v0, vz*gl.maxDist, r));
+    sdCol(red,   sdCapsule(v0, vx*gl.maxDist, r));
+    sdCol(green, sdCapsule(v0, vy*gl.maxDist, r));
+    sdCol(blue,  sdCapsule(v0, vz*gl.maxDist, r));
 }
 
 void sdFloor(vec3 color, float h)
 {
-    if (cam.pos.y > h) sdColor(color, sdPlane(vy*h, vy));
+    if (cam.pos.y > h) sdCol(color, sdPlane(vy*h, vy));
 }
 
 // 000   000   0000000   000   0000000  00000000
