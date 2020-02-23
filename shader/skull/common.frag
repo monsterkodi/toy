@@ -128,11 +128,11 @@ float occlusion(vec3 p, vec3 n)                          \
     if (!opt.occl) return 1.0;                           \
     float a = 0.0;                                       \
     float weight = 1.0;                                  \
-    for (int i = gl.zero; i <= 6; i++)                   \
+    for (int i = gl.zero; i <= 10; i++)                  \
     {                                                    \
-        float d = (float(i) / 6.0) * 0.3;                \
+        float d = (float(i) / 10.0)*1.5;                 \
         a += weight * (d - map(p + n*d));                \
-        weight *= 0.8;                                   \
+        weight *= 0.60;                                  \
     }                                                    \
     float f = clamp01(1.0-a);                            \
     return f*f;                                          \
@@ -749,6 +749,11 @@ vec3 desat(vec3 col)
 // 000000000  000000000     000     0000000    000    00000
 // 000 0 000  000   000     000     000   000  000   000 000
 // 000   000  000   000     000     000   000  000  000   000
+
+vec3 normal(float x, float y, float z)
+{
+    return normalize(vec3(x,y,z));
+}
 
 mat3 alignMatrix(vec3 right, vec3 up)
 {
