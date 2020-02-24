@@ -329,6 +329,12 @@ struct SDF {
     int   mat;
 } sdf;
 
+// 00000000  000   000  000   000  
+// 000       0000  000  000   000  
+// 0000000   000 0 000   000 000   
+// 000       000  0000     000     
+// 00000000  000   000      0      
+
 struct Env {
     float gloss;   // size of glossy
     vec3  ambient; 
@@ -1103,22 +1109,6 @@ float noise3D(in vec3 p)
 // 0000000    000   000  000000000  00000000
 // 000   000  000   000  000 0 000  000
 // 0000000     0000000   000   000  000
-
-float drawSphere(in vec3 p)
-{
-    p = fract(p)-.5; return dot(p, p);
-}
-
-float cellTile(in vec3 p)
-{
-    vec4 d;
-    d.x = drawSphere(p - vec3(.81, .62, .53)); p.xy = vec2(p.y-p.x, p.y + p.x)*.7071;
-    d.y = drawSphere(p - vec3(.39, .2,  .11)); p.yz = vec2(p.z-p.y, p.z + p.y)*.7071;
-    d.z = drawSphere(p - vec3(.62, .24, .06)); p.xz = vec2(p.z-p.x, p.z + p.x)*.7071;
-    d.w = drawSphere(p - vec3(.2,  .82, .64));
-    d.xy = min(d.xz, d.yw);
-    return min(d.x, d.y)*2.66;
-}
 
 float bumpSurf(vec3 p, float factor)
 {

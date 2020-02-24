@@ -211,7 +211,10 @@ vec3 calcLight(vec3 p, vec3 n)
             float brf = br * shd * occl;
             
             vec3 vn = normalize(ldir-cam.dir);
-            gloss += br*gl.light[i].color*mat.glossy*pow(smoothstep(mat.glossy*(0.992-env.gloss*0.6*0.01), 1.0-env.gloss*0.45*0.01, dot(n,vn)), 1.0+40.0*mat.glossy);
+            gloss += br*gl.light[i].color*mat.glossy*pow(smoothstep(
+                mat.glossy*(0.992-env.gloss*0.6*0.01), 
+                1.0-env.gloss*0.45*0.01, dot(n,vn)), 
+                1.0+40.0*mat.glossy);
             
             sum  += gl.light[i].color * dot(n,ldir) * brf;
             bsum += br;
@@ -247,7 +250,6 @@ void setup()
     fog.near    = 0.9;
     fog.color   = hsl(HUE_B, 0.5, 0.2);
     env.ambient = blue*0.015;
-    env.gloss   = 1.0;
     
     gl.maxSteps = 128;
     gl.minDist  = 0.02;
@@ -279,8 +281,8 @@ void setup()
         setMatColor(3+i, gl.light[i].bright*gl.light[i].color);
     }
     
-    material[0].glossy = iRange(1.0,0.0,0.5);
-    material[2].glossy = iRange(1.0,0.0,0.5);
+    material[0].glossy = iRange(1.0,1.0,0.5);
+    material[2].glossy = iRange(1.0,1.0,0.5);
     material[0].sat    = iRange(1.0,0.0,0.2);
     material[1].emit   = iRange(0.2,0.05,0.2);
 }
