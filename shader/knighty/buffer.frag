@@ -9,6 +9,8 @@
 KEYS
 LOAD
 
+#define CAM_SPEED 0.6
+
 // 000  000   000  000  000000000  
 // 000  0000  000  000     000     
 // 000  000 0 000  000     000     
@@ -17,7 +19,7 @@ LOAD
 
 void initCamera()
 {    
-    initCam(-2.0*vy, 40.0, 0.0, -0.4);
+    initCam(10.0*vy, 80.0, 1.0, -0.4);
     
     save(0,2,vec4(cam.tgt,0));
     save(0,3,vec4(cam.pos,0));
@@ -47,17 +49,17 @@ void calcCamera()
     if (keyDown(KEY_DOWN))  orbitPitch( 1.0);
     
     vec3 pan;
-    if (keyDown(KEY_W))  { if (length(cam.pos2tgt)>1.0) { lookZoom(1.0); } else { pan += 0.2*cam.dir; }}
+    if (keyDown(KEY_W))  { if (length(cam.pos2tgt)>1.0) { lookZoom(1.0); } else { pan += 0.2*CAM_SPEED*cam.dir; }}
     if (keyDown(KEY_S))  { lookZoom(-1.0); }
-    if (keyDown(KEY_A))  { lookZoom(0.0); pan -= 0.1*cam.rgt; }
-    if (keyDown(KEY_D))  { lookZoom(0.0); pan += 0.1*cam.rgt; }
-    if (keyDown(KEY_Q))  { lookZoom(0.0); pan -= 0.1*cam.up;  }
-    if (keyDown(KEY_E))  { lookZoom(0.0); pan += 0.1*cam.up;  }
+    if (keyDown(KEY_A))  { lookZoom(0.0); pan -= CAM_SPEED*cam.rgt; }
+    if (keyDown(KEY_D))  { lookZoom(0.0); pan += CAM_SPEED*cam.rgt; }
+    if (keyDown(KEY_Q))  { lookZoom(0.0); pan -= CAM_SPEED*cam.up;  }
+    if (keyDown(KEY_E))  { lookZoom(0.0); pan += CAM_SPEED*cam.up;  }
     
     lookPan(pan);
     
-    if (keyDown(KEY_PGDN)) lookPan(-vy*0.1);
-    if (keyDown(KEY_PGUP)) lookPan( vy*0.1);
+    if (keyDown(KEY_PGDN)) lookPan(-vy*CAM_SPEED);
+    if (keyDown(KEY_PGUP)) lookPan( vy*CAM_SPEED);
     
     save(0,2,vec4(cam.tgt, 0));
     save(0,3,vec4(cam.pos, 0));

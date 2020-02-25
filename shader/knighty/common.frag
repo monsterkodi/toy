@@ -293,7 +293,7 @@ struct Opt {
 #define OPTIONS \
     opt.rotate   = !keyState(KEY_R);      \
     opt.axes     = !keyState(KEY_X);      \
-    opt.info     = !keyState(KEY_I);      \
+    opt.info     =  keyState(KEY_I);      \
     opt.help     =  keyState(KEY_H);      \
     opt.shadow   =  keyState(KEY_L);      \
     opt.occl     =  keyState(KEY_O);      \
@@ -736,8 +736,9 @@ vec3  deg2rad(vec3 v) { return PI * v / 180.0; }
 
 mat3  rotMat(vec3 u, float angle)
 {
-    float s = sin(deg2rad(angle));
-    float c = cos(deg2rad(angle));
+    float a = deg2rad(angle);
+    float s = sin(a);
+    float c = cos(a);
     float i = 1.0-c;
 
     return mat3(
@@ -751,6 +752,36 @@ vec3 rotAxisAngle(vec3 position, vec3 axis, float angle)
 {
     mat3 m = rotMat(axis, angle);
     return m * position;
+}
+
+
+vec3 rotRayAngle(vec3 p, vec3 ro, vec3 rd, float angle)
+{
+    return rotAxisAngle(p-ro, rd-ro, angle)+ro;
+}
+
+vec3 rotY(vec3 v, float d)
+{
+    float r = deg2rad(d);
+    float c = cos(r);
+    float s = sin(r);
+    return vec3(v.x*c+v.z*s, v.y, v.z*c+v.x*s);
+}
+
+vec3 rotX(vec3 v, float d)
+{
+    float r = deg2rad(d);
+    float c = cos(r);
+    float s = sin(r);
+    return vec3(v.x, v.y*c+v.z*s, v.z*c+v.y*s);
+}
+
+vec3 rotZ(vec3 v, float d)
+{
+    float r = deg2rad(d);
+    float c = cos(r);
+    float s = sin(r);
+    return vec3(v.x*c+v.y*s, v.y*c+v.x*s, v.z);
 }
 
 // 00000000    0000000   000       0000000   00000000
@@ -826,35 +857,6 @@ vec3 rotAxisAngleQuat(vec3 p, vec3 axis, float angle)
     return quatMul(quatMul(qr, vec4(p, 0)), quatConj(qr)).xyz;
 }
 
-vec3 rotRayAngle(vec3 p, vec3 ro, vec3 rd, float angle)
-{
-    return rotAxisAngle(p-ro, rd-ro, angle)+ro;
-}
-
-vec3 rotY(vec3 v, float d)
-{
-    float r = deg2rad(d);
-    float c = cos(r);
-    float s = sin(r);
-    return vec3(v.x*c+v.z*s, v.y, v.z*c+v.x*s);
-}
-
-vec3 rotX(vec3 v, float d)
-{
-    float r = deg2rad(d);
-    float c = cos(r);
-    float s = sin(r);
-    return vec3(v.x, v.y*c+v.z*s, v.z*c+v.y*s);
-}
-
-vec3 rotZ(vec3 v, float d)
-{
-    float r = deg2rad(d);
-    float c = cos(r);
-    float s = sin(r);
-    return vec3(v.x*c+v.y*s, v.y*c+v.x*s, v.z);
-}
-
 //  0000000   00000000   0000000   00     00
 // 000        000       000   000  000   000
 // 000  0000  0000000   000   000  000000000
@@ -918,11 +920,11 @@ float opInter(float d1, float d2) { return opInter(d1, d2, 0.2); }
 void sdMat(int m, float d) { if (d < sdf.dist) { sdf.dist = d; sdf.mat = m; } }
 void sdUni(int m, float d) { sdMat(m, opUnion(d, sdf.dist, 0.5)); }
 void sdDif(int m, float d) { sdMat(m, opDiff(d, sdf.dist, 0.5)); }
-void sdUni(int m, float f, float d) { sdMat(m, opUnion(d, sdf.dist, f)); }
-void sdInt(int m, float f, float d) { float md = opInter(d-f, sdf.dist, 0.0); if (md <= sdf.dist) { sdf.dist = md; sdf.mat = m; }}
-void sdDif(int m, float f, float d) { float md = opDiff(sdf.dist, d, f); if (md > sdf.dist) { sdf.dist = md; sdf.mat = m; }}
-void sdEmb(int m, float f, float d) { float md = opDiff(sdf.dist, d-f, 0.0); if (md > sdf.dist) { sdf.dist = md; sdf.mat = m; }}
-void sdExt(int m, float f, float d) { float md = opInter(d-f, sdf.dist-f, f); if (md <= sdf.dist) { sdf.dist = md; sdf.mat = m; }}
+void sdUni(int m, float d, float f) { sdMat(m, opUnion(d, sdf.dist, f)); }
+void sdInt(int m, float d, float f) { float md = opInter(d-f, sdf.dist, 0.0); if (md <= sdf.dist) { sdf.dist = md; sdf.mat = m; }}
+void sdDif(int m, float d, float f) { float md = opDiff(sdf.dist, d, f); if (md > sdf.dist) { sdf.dist = md; sdf.mat = m; }}
+void sdEmb(int m, float d, float f) { float md = opDiff(sdf.dist, d-f, 0.0); if (md > sdf.dist) { sdf.dist = md; sdf.mat = m; }}
+void sdExt(int m, float d, float f) { float md = opInter(d-f, sdf.dist-f, f); if (md <= sdf.dist) { sdf.dist = md; sdf.mat = m; }}
 
 void sdCol(vec3 c, float d) { if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sdf.color = c; } }
 
@@ -931,6 +933,22 @@ void sdCol(vec3 c, float d) { if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sd
 // 0000000   000   000
 //      000  000   000
 // 0000000   0000000
+
+#define MAX_STACK 3
+int sdStackTop = 0;
+vec3[MAX_STACK] sdStack;
+
+void sdPush()
+{
+    sdStack[sdStackTop] = sdf.pos;
+    sdStackTop++;
+}
+
+void sdPop()
+{
+    sdStackTop--;
+    sdf.pos = sdStack[sdStackTop];
+}
 
 float sdSphere(vec3 a, float r)
 {
@@ -1022,10 +1040,13 @@ float sdCone(vec3 a, float r1, float r2, float h)
 
 float sdCone(vec3 a, vec3 b, float r1, float r2)
 {
+    sdPush();
     sdf.pos -= a;
     vec3 ndir = normalize(b-a);
-    sdf.pos *= alignMatrix(cross(vy,ndir), ndir);
-    return sdCone(v0, r1, r2, length(b-a));
+    sdf.pos *= alignMatrix(normalize(cross(vy,ndir)), ndir);
+    float d = sdCone(v0, r1, r2, length(b-a));
+    sdPop();
+    return d;
 }
 
 float sdLine(vec3 a, vec3 n, float r)

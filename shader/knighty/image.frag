@@ -3,39 +3,124 @@ HEADER
 
 Mat[6] material = Mat[6]( 
     //  hue    sat   lum   shiny  metal glossy emit
-    Mat(HUE_B, 1.0,  0.7,   1.0,  0.0,  0.0,   0.0  ), 
-    Mat(HUE_R, 1.0,  0.5,   1.0,  0.9,  1.0,   0.0  ),
-    Mat(0.5,   0.0,  1.0,   0.5,  0.5,  1.0,   0.1  ), 
-    Mat(0.5,   0.0,  1.0,   0.0,  0.0,  0.0,   1.0  ),
-    Mat(0.5,   0.0,  1.0,   0.0,  0.0,  0.0,   1.0  ),
+    Mat(0.1,   0.5,  0.2,   1.0,  0.5,  0.1,   0.0  ), // puppy
+    Mat(HUE_B, 1.0,  0.7,   0.8,  0.4,  0.1,   0.0  ), // body
+    Mat(0.5,   0.0,  0.05,  1.0,  0.0,  0.3,   0.0  ), // shoe 
+    Mat(0.2,   0.5,  0.9,   0.5,  0.0,  0.5,   0.0  ), // skin
+    Mat(0.5,   0.0,  0.01,  0.0,  0.0,  0.9,   0.0  ), // phone 
     Mat(0.5,   0.0,  1.0,   0.0,  0.0,  0.0,   1.0  )
 );
 
+// 000   000  000   000  000   0000000   000   000  000000000  
+// 000  000   0000  000  000  000        000   000     000     
+// 0000000    000 0 000  000  000  0000  000000000     000     
+// 000  000   000  0000  000  000   000  000   000     000     
+// 000   000  000   000  000   0000000   000   000     000     
+
 void knight()
 {
+    sdPush();
+    
+    sdf.pos.xz += vec2(10.0,-5.0); 
+    sdf.pos *= alignMatrix(normal(-1.0,0.0,-0.6),vy);
+    
+    sdPush();
     sdf.pos.x = abs(sdf.pos.x);
-    // sdf.pos *= alignMatrix(vx, normal(0.0,1.0,-0.5));
     
     float d, h;
+    vec3 body, leg, foot, toe, neck, arm, elle, hand, head, nose, tail, ttip;
+
+    body = 2.2*vy;
+    neck = body +3.0*vy +3.0*vz;
+    leg  = body +2.0*vx;
+    foot = leg  +2.0*vx -1.0*vy +4.0*vz;
+    arm  = neck +1.7*vx -0.2*vy;
+    hand = arm  -0.5*vx -4.0*vy +2.0*vz;
+    head = neck         +3.0*vy +2.0*vz;
     
-    d = sdEllipsoid(vy, vec3(3.0,4.0,6.0));
+    d = sdCone(body, neck, 2.5, 1.5);
+    d = opUnion(d, sdCone(leg,  foot, 1.8, 0.8), 0.4);
+    d = opUnion(d, sdCone(arm,  hand, 1.5, 0.8), 0.4);
+    sdPop();
+
+    tail = body -1.9*vz;
+    ttip = tail +2.0*vx +3.0*vy -2.0*vz;
+    d = opUnion(d, sdCapsule(tail, ttip, 0.5), 0.5);
     
-    d = opUnion(d, sdCone  (2.5*vx -2.5*vy -4.0*vz, 1.0, 2.3, 3.5), 0.75);
-    d = opUnion(d, sdCone  (2.5*vx -2.5*vy +4.0*vz, 1.0, 2.0, 3.5), 0.75);
-    d = opUnion(d, sdEllipsoid(4.5*vy-4.4*vz, vec3(1.5,3.0,2.0)), 0.75);
-    d = opUnion(d, sdCone(7.0*vy-5.0*vz, 4.5*vy-9.0*vz, 2.2, 1.0), 0.5);
-    // d = opDiff (d, sdPlane (-2.5*vy, vy), 0.5);                       
-    // d = opUnion(d, sdBox(7.2*vx+3.5*vy-1.2*vz, normalize(vec3(1,-0.2,0.4)), vy, vec3(2.0,3.0,3.0), 1.0), 1.0);
-    // h = opUnion(h, sdCapsule(vy-2.0*vz, vy-0.5*vz, 3.6));
+    sdf.pos -= head;
+    sdf.pos *= alignMatrix(normal(1.0,0.0,iRange(-0.2,0.4)),vy);
+    sdf.pos.x = abs(sdf.pos.x);
+        
+    nose = 2.0*vy +1.5*vz;
+    
+    vec3 hdir = normalize(nose);
+    vec3 hdrg = cross(hdir, vy);
+    vec3 hdup = cross(hdrg, hdir);
+    vec3 ceye = nose*0.3;
+    vec3 leye = ceye -3.0*hdrg;
+    vec3 reye = ceye +3.0*hdrg;
+    
+    vec3 cear  = -0.5*nose + hdup;
+    vec3 lear1 = -0.2*nose -2.0*hdrg +2.0*hdup;
+    vec3 lear2 = cear -4.0*hdrg;
+    
+    d = opUnion(d, sdCone(v0, nose, 2.2, 1.2), 0.5);
+    d = opUnion(d, sdCapsule(lear1, lear2, 0.9), 0.3);
+    d = opDiff (d, sdCapsule(leye, reye, 0.7), 0.4);
+    sdPop();
     
     sdMat(0, d);
+    
+    sdf.pos.z += 20.0;
+    sdPush();
+    sdf.pos.x = abs(sdf.pos.x);
+    
+    body = 15.0*vy;
+    d = sdSphere(body, 7.0);
+    d = opUnion(d, sdSphere(body +2.5*vx + 3.0*vy + 2.0*vz, 3.5), 2.0); // chest
+    d = opInter(d, sdPlane (body -3.0*vz, normal(0.0,1.0,-1.0)), 1.0); // back cutoff
+    d = opUnion(d, sdSphere(body +2.0*vx -5.0*vy -2.0*vz, 3.0), 2.0); // ass
+    d = opUnion(d, sdSphere(body         -6.0*vy +3.8*vz, 1.0), 2.0); // crotch
+    
+    leg  = body +3.0*vx -8.0*vy + 1.0*vz;
+    foot = leg  +1.0*vx -5.0*vy - 1.1*vz;
+    toe  = foot +1.0*vx +4.0*vz -1.2*vy;
+    
+    d = opUnion(d, sdCone  (leg, foot, 3.0, 2.0), 1.75); // leg
+    sdMat(1, d);
+    
+    sdUni(2, sdCone(foot, toe, 2.0, 1.0), 0.1); // shoe
+    
+    arm  = body + 6.0*vx + 3.0*vy - 2.0*vz;
+    elle = arm + 5.0*vx  - 5.0*vy +     vz;
+    hand = elle - 1.0*vx          + 6.0*vz;
+    d = sdCapsule(body, body+2.0*vy-1.5*vz, 6.0);  // shoulder
+    d = opUnion(d, sdCone(arm,  elle, 3.5, 1.5), 1.0); // arm
+    d = opUnion(d, sdCone(elle, hand, 2.5, 1.5), 1.0); 
+    d = opUnion(d, sdSphere(hand+vz, 2.6), 0.5); 
+    
+    sdMat(3, d);
+    sdPop();
+    
+    vec3 phup = normal(-0.5,1.0,-0.5);
+    sdMat(2, sdBox(hand+3.0*vz+1.0*vx+vy, normalize(cross(vy,phup)), phup, vec3(2.5,0.6,4.5), 0.6));
+    
+    hand.x = -hand.x;
+    sdMat(0, sdCapsule(hand-4.0*vx+2.0*vz+2.0*2.0*vy, hand+3.0*vx-1.5*vy+0.5*vz, 0.8));
 }
+
+// 00     00   0000000   00000000   
+// 000   000  000   000  000   000  
+// 000000000  000000000  00000000   
+// 000 0 000  000   000  000        
+// 000   000  000   000  000        
 
 float map(vec3 p)
 {
     sdStart(p);
     
-    sdFlex(vec3(0.04), -3.6);
+    knight();
+    sdFlex(vec3(0.04), 0.0);
     sdAxes(0.1);
     
     if (false && gl.pass != PASS_SHADOW)
@@ -45,8 +130,6 @@ float map(vec3 p)
         sdMat(5, sdSphere(gl.light[2].pos, gl.light[2].bright)); 
     }
     
-    knight();
-    
     return sdf.dist;
 }
 
@@ -54,6 +137,12 @@ NORMAL
 MARCH    
 OCCLUSION
 SHADOW
+
+// 000      000   0000000   000   000  000000000  
+// 000      000  000        000   000     000     
+// 000      000  000  0000  000000000     000     
+// 000      000  000   000  000   000     000     
+// 0000000  000   0000000   000   000     000     
 
 vec3 calcLight(vec3 p, vec3 n)                    
 {                                                 
@@ -88,12 +177,12 @@ vec3 calcLight(vec3 p, vec3 n)
         float bsum = 0.0;
         float mbr  = 0.0;
         float occl = occlusion(p,n);
-        for (int i = gl.zero; i < 3; i++)
+        for (int i = gl.zero; i < 2; i++)
         {
             float br  = gl.light[i].bright;
             vec3  ld  = normalize(gl.light[i].pos-p);
             vec3  vn  = normalize(ld-cam.dir);
-            float shd = shadow(p,n,i);
+            float shd = i == 0 ? shadow(p,n,i) : 1.0;
             float dvn = dot(n,vn);
             float dld = dot(n,ld);
             float dcd = dot(n,-cam.dir);
@@ -143,41 +232,39 @@ void setup()
     fog.near    = 0.9;
     fog.color   = vec3(0.01);
     env.ambient = white*0.005;
-    env.gloss   = 0.005;
+    env.gloss   = 1.0;
     env.specs   = 1.0;
     
     gl.maxSteps = 128;
     gl.minDist  = 0.02;
-    gl.maxDist  = 200.0;
+    gl.maxDist  = 400.0;
     
-    vec3 lp = vec3(22,10,0); 
-    float soft = 0.5; 
+    vec3 lp = vec3(22,30,0); 
+    float soft = 0.0; 
     float dark = 0.07;
-    float lsat = 1.0; 
-    float lrot = 5.0;
-    float ljmp = 5.0;
-    gl.light[0].color       = hsl(HUE_R, 1.0, lsat);
+    float lsat = 0.8; 
+    gl.light[0].color       = vec3(1.0,0.8,0.6);
     gl.light[0].bright      = 1.0;
     gl.light[0].shadow.soft = soft;
     gl.light[0].shadow.dark = dark;
-    gl.light[0].pos = rotAxisAngle(lp, vy, 120.0-iTime*lrot)+iRange(ljmp,0.0)*vy;
+    gl.light[0].pos = cam.pos -30.0*cam.rgt + 40.0*vy - 30.0*cam.dir;
     
-    gl.light[1].color       = hsl(HUE_G, 1.0, lsat);
+    gl.light[1].color       = vec3(0.6,0.6,1.0);
     gl.light[1].bright      = 1.0;
     gl.light[1].shadow.soft = soft;
     gl.light[1].shadow.dark = dark;
-    gl.light[1].pos = rotAxisAngle(lp, vy, -120.0-iTime*lrot)+iRange(ljmp,0.0)*vy;
+    gl.light[1].pos = cam.pos +50.0*cam.rgt + 40.0*vy + 50.0*cam.dir;
     
-    gl.light[2].color       = hsl(HUE_B, 1.0, lsat);
-    gl.light[2].bright      = 1.0;
+    gl.light[2].color       = vec3(1.0,1.0,0.7);
+    gl.light[2].bright      = 0.0;
     gl.light[2].shadow.soft = soft;
     gl.light[2].shadow.dark = dark;
-    gl.light[2].pos = rotAxisAngle(lp, vy, -iTime*lrot)+iRange(ljmp,0.0)*vy;
+    gl.light[2].pos = cam.pos;
     
-    for (int i = 0; i < 3; i++)
-    {
-        setMatColor(3+i, gl.light[i].bright*gl.light[i].color);
-    }    
+    // for (int i = 0; i < 3; i++)
+    // {
+        // setMatColor(3+i, gl.light[i].bright*gl.light[i].color);
+    // }    
 }
 
 SETUP
