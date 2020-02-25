@@ -15,6 +15,7 @@ class Main extends app
         
         dirs = ["#{__dirname}/../shader"]
         dirs = dirs.concat slash.list(dirs[0], type:'dir').filter((p) -> p.type=='dir').map (d) -> d.file
+        # klog 'dirs' dirs
         super
             dir:            __dirname
             dirs:           dirs

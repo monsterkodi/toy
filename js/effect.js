@@ -1,4 +1,4 @@
-// koffee 1.6.0
+// koffee 1.7.0
 var Effect, Pass, Renderer, klog;
 
 klog = require('kxk').klog;

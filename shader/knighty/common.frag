@@ -1020,6 +1020,14 @@ float sdCone(vec3 a, float r1, float r2, float h)
     return dot(q, vec2(c,b) ) - r1;
 }
 
+float sdCone(vec3 a, vec3 b, float r1, float r2)
+{
+    sdf.pos -= a;
+    vec3 ndir = normalize(b-a);
+    sdf.pos *= alignMatrix(cross(vy,ndir), ndir);
+    return sdCone(v0, r1, r2, length(b-a));
+}
+
 float sdLine(vec3 a, vec3 n, float r)
 {
     vec3 p = sdf.pos-a;
