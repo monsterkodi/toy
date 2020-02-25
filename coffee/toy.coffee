@@ -67,7 +67,8 @@ class Toy
         # @load 'buffertest'
         # @load 'snowmobile'
         # @load 'common'
-        @load 'skull'
+        # @load 'skull'
+        @load 'subsurf'
 
     # 00000000   00000000  000   000  0000000    00000000  00000000   
     # 000   000  000       0000  000  000   000  000       000   000  
