@@ -957,7 +957,7 @@ float sdSphere(vec3 a, float r)
 
 float sdPill(vec3 a, float r, vec3 n)
 {
-    vec3 p = sdf.pos-a;
+    vec3  p = sdf.pos-a;
     float d = abs(dot(normalize(n),normalize(p)));
     float f = smoothstep(0.0, 1.3, d);
     return length(p) - r + f * length(n);

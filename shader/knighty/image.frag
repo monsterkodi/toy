@@ -8,7 +8,7 @@ Mat[6] material = Mat[6](
     Mat(0.5,   0.0,  0.05,  1.0,  0.0,  0.3,   0.0  ), // shoe 
     Mat(0.2,   0.5,  0.9,   0.5,  0.0,  0.5,   0.0  ), // skin
     Mat(HUE_R, 0.9,  0.2,   0.5,  0.0,  0.0,   0.0  ), // cap
-    Mat(0.5,   0.0,  1.0,   0.0,  0.0,  0.0,   1.0  )
+    Mat(HUE_Y, 1.0,  0.7,   1.0,  0.5,  1.0,   0.0  )  // glasses
 );
 
 void guy()
@@ -94,9 +94,17 @@ void guy()
     sdPop();
     
     head = body +11.0*vy+3.0*vx+2.0*vz;
-    d = opUnion(d, sdSphere(head, 4.5), 2.0);
+    nose = head +4.5*normalize(hand+3.0*vy-head);
+    d = opUnion(d, sdSphere(head, 4.5), 2.0); // head
+    d = opUnion(d, sdSphere(nose, 1.4), 0.5); // nose
     
     sdMat(3, d);
+    vec3 head2nose = normalize(nose+3.0*vy-head);
+    vec3 noseright = cross(vy, head2nose);
+    vec3 noseup    = cross(head2nose, noseright);
+    d =        sdCylinder(nose+1.0*head2nose+3.0*noseright, nose+1.0*head2nose+3.0*noseright-0.1*head2nose, 2.0, 0.0);
+    d = min(d, sdCylinder(nose+1.0*head2nose-3.0*noseright, nose+1.0*head2nose-3.0*noseright-0.1*head2nose, 2.0, 0.0));
+    sdMat(5, d);
     
     vec3 phup = normal(-0.5,1.0,-0.5);
     sdMat(2, sdBox(hand+3.0*vz+1.0*vx+vy, normalize(cross(vy,phup)), phup, vec3(2.5,0.6,4.5), 0.6));
@@ -104,8 +112,8 @@ void guy()
     hand.x = -hand.x;
     sdMat(0, sdCapsule(hand-4.0*vx+2.0*vz+4.0*vy, hand+3.0*vx-1.5*vy+0.5*vz, 0.8));
     
-    sdMat(4, sdCapsule(body, body+2.0*vy-1.5*vz, 6.6));
-    sdMat(4, sdHalfSphere(head, vy, 5.0, 1.0));
+    sdMat(4, sdCapsule(body, body+2.0*vy-1.5*vz, 6.6)); // shirt
+    sdMat(4, sdHalfSphere(head, vy, 5.0, 1.0)); // cap
 }
 
 // 00     00   0000000   00000000   
