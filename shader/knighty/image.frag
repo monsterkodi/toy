@@ -11,59 +11,83 @@ Mat[6] material = Mat[6](
     Mat(HUE_B, 1.0,  0.7,   0.5,  0.0,  1.0,   0.0  )  // glasses
 );
 
-void guy()
+pivot pDog;
+pivot pDogTail;
+pivot pDogHead;
+pivot pDogEar;
+pivot pDogLeg;
+pivot pDogArm;
+
+void pose()
 {
+    eulerPivot   (pDog,     -50.0,   0.0, 0.0);
+    eulerPivot   (pDogEar,  iRange(-90.0,-120.0, 2.0), iRange(-60.0,-90.0, 2.0), 0.0);
+    concatPivotXY(pDogLeg,  pDog,     -63.0, -30.0);
+    concatPivotXY(pDogArm,  pDog,    -100.0,  10.0);
+    concatPivotXY(pDogTail, pDog,     100.0,  iRange(-25.0,25.0,10.0));
+    concatPivotYZ(pDogHead, pDog, iRange(-10.0,10.0, 1.0),  iRange(-25.0,25.0, 1.0));
+}
+
+void animate()
+{
+    pDog.p     = 2.2*vy;
+    pDogLeg.p  = pDog.p +2.0*pDog.x;
+    pDogArm.p  = pDog.p +1.8*pDog.x + 4.2*pDog.y;
+    pDogTail.p = pDog.p -1.5*pDog.y - 1.5*pDog.z;
+    pDogHead.p = pDog.p +8.0*pDog.y - 1.5*pDog.z;
+    pDogEar.p  = 1.2*vx -vy -1.0*vz;
+}
+
+// 0000000     0000000    0000000   
+// 000   000  000   000  000        
+// 000   000  000   000  000  0000  
+// 000   000  000   000  000   000  
+// 0000000     0000000    0000000   
+
+void dog()
+{
+    float d;
+    
     sdPush();
     
-    sdf.pos.xz += vec2(10.0,-5.0); 
-    sdf.pos *= alignMatrix(normal(-1.0,0.0,-0.6),vy);
+    sdf.pos.xz -= vec2(-12.0,4.0);
+    sdf.pos *= rMatY(-130.0);
     
     sdPush();
+    
     sdf.pos.x = abs(sdf.pos.x);
     
-    float d, h;
-    vec3 body, leg, foot, toe, neck, arm, elle, hand, head, nose, tail, ttip;
-
-    body = 2.2*vy;
-    neck = body +3.0*vy +3.0*vz;
-    leg  = body +2.0*vx;
-    foot = leg  +2.0*vx -1.0*vy +4.0*vz;
-    arm  = neck +1.7*vx -0.2*vy;
-    hand = arm  -0.5*vx -4.0*vy +2.0*vz;
-    head = neck         +3.0*vy +2.0*vz;
+    d = sdCone(pDog, 4.25, 2.2, 1.5);
+    d = opUnion(d, sdCone(pDogLeg, 4.5, 1.8, 0.8), 0.4);
+    d = opUnion(d, sdCone(pDogArm, 4.5, 1.5, 0.8), 0.4);    
     
-    d = sdCone(body, neck, 2.5, 1.5);
-    d = opUnion(d, sdCone(leg,  foot, 1.8, 0.8), 0.4);
-    d = opUnion(d, sdCone(arm,  hand, 1.5, 0.8), 0.4);
     sdPop();
-
-    tail = body -1.9*vz;
-    ttip = tail +2.0*vx +3.0*vy -2.0*vz;
-    d = opUnion(d, sdCapsule(tail, ttip, 0.5), 0.5);
     
-    sdf.pos -= head;
-    sdf.pos *= alignMatrix(normal(1.0,0.0,iRange(-0.2,0.4)),vy);
+    d = opUnion(d, sdCapsule(pDogTail.p, pDogTail.p+4.1*pDogTail.y, 0.5), 0.5);
+    
+    sdf.pos -= pDogHead.p;
+    sdf.pos *= pDogHead.m;
     sdf.pos.x = abs(sdf.pos.x);
-        
-    nose = 2.0*vy +1.5*vz;
     
-    vec3 hdir = normalize(nose);
-    vec3 hdrg = cross(hdir, vy);
-    vec3 hdup = cross(hdrg, hdir);
-    vec3 ceye = nose*0.3;
-    vec3 leye = ceye -3.0*hdrg;
-    vec3 reye = ceye +3.0*hdrg;
-    
-    vec3 cear  = -0.5*nose + hdup;
-    vec3 lear1 = -0.2*nose -2.0*hdrg +2.0*hdup;
-    vec3 lear2 = cear -4.0*hdrg;
-    
-    d = opUnion(d, sdCone(v0, nose, 2.2, 1.2), 0.5);
-    d = opUnion(d, sdCapsule(lear1, lear2, 0.9), 0.3);
-    d = opDiff (d, sdCapsule(leye, reye, 0.7), 0.4);
+    d = opUnion(d, sdCone(v0, 2.5, 2.2, 1.2), 1.2);
+    d = opDiff (d, sdCapsule(-3.0*vx+vy, 3.0*vx+vy,     0.7), 0.4);
+    d = opUnion(d, sdCapsule( pDogEar.p, pDogEar.p+2.0*pDogEar.y, 0.8), 0.3);
     sdPop();
     
     sdMat(0, d);
+    
+}
+
+//  0000000   000   000  000   000  
+// 000        000   000   000 000   
+// 000  0000  000   000    00000    
+// 000   000  000   000     000     
+//  0000000    0000000      000     
+
+void guy()
+{
+    float d, h;
+    vec3 body, leg, foot, toe, neck, arm, elle, hand, head, nose, tail, ttip;
     
     sdPush();
     sdf.pos.z += 20.0;
@@ -133,6 +157,7 @@ float map(vec3 p)
     sdStart(p);
     
     guy();
+    dog();
     sdFlex(vec3(0.04), 0.0);
     // sdAxes(0.1);
     
@@ -240,6 +265,12 @@ void setMatColor(int i, vec3 c)
     material[i].lum = hc.z;
 }
 
+//  0000000  00000000  000000000  000   000  00000000   
+// 000       000          000     000   000  000   000  
+// 0000000   0000000      000     000   000  00000000   
+//      000  000          000     000   000  000        
+// 0000000   00000000     000      0000000   000        
+
 void setup()
 {
     cam.fov     = PI;
@@ -270,6 +301,9 @@ void setup()
     gl.light[2].bright      = 1.0;
     gl.light[2].range       = 17.0;
     gl.light[2].pos = 12.0*vx +17.0*vy -11.0*vz;
+    
+    pose();
+    animate();
     
     // for (int i = 0; i < 3; i++)
     // {

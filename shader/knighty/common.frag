@@ -785,6 +785,78 @@ vec3 rotZ(vec3 v, float d)
     return vec3(v.x*c+v.y*s, v.y*c+v.x*s, v.z);
 }
 
+// 00000000   000  000   000   0000000   000000000  
+// 000   000  000  000   000  000   000     000     
+// 00000000   000   000 000   000   000     000     
+// 000        000     000     000   000     000     
+// 000        000      0       0000000      000     
+
+struct pivot {
+    vec3 p;
+    vec3 x;
+    vec3 y;
+    vec3 z;
+    mat3 m;
+};
+
+#define pivot0  pivot(v0,vx,vy,vz,mat3(1,0,0,0,1,0,0,0,1))
+
+// 00000000  000   000  000      00000000  00000000   
+// 000       000   000  000      000       000   000  
+// 0000000   000   000  000      0000000   0000000    
+// 000       000   000  000      000       000   000  
+// 00000000   0000000   0000000  00000000  000   000  
+
+mat3 rMatX(float x)
+{
+     float r = deg2rad(x);
+     float c = cos(r), s = sin(r);
+     return mat3(1,0,0,0,c,-s,0,s,c);
+}
+
+mat3 rMatY(float y)
+{
+     float r = deg2rad(y);
+     float c = cos(r), s = sin(r);
+     return mat3(c,0,s,0,1,0,-s,0,c);
+}
+
+mat3 rMatZ(float z)
+{
+     float r = deg2rad(z);
+     float c = cos(r), s = sin(r);
+     return mat3(c,-s,0,s,c,0,0,0,1);
+}
+
+mat3 euler(float x, float y, float z)
+{
+    return rMatY(y) * rMatX(x) * rMatZ(z);
+}
+
+void eulerPivot(inout pivot p, float x, float y, float z)
+{
+    p.m = euler(x,y,z);
+    p.x = p.m * vx;
+    p.y = p.m * vy;
+    p.z = p.m * vz;
+}
+
+void concatPivotXY(inout pivot p, pivot o, float x, float y)
+{
+    p.m = o.m * euler(x,y,0.0);
+    p.x = p.m * vx;
+    p.y = p.m * vy;
+    p.z = p.m * vz;
+}
+
+void concatPivotYZ(inout pivot p, pivot o, float y, float z)
+{
+    p.m = o.m * euler(0.0,y,z);
+    p.x = p.m * vx;
+    p.y = p.m * vy;
+    p.z = p.m * vz;
+}
+
 // 00000000    0000000   000       0000000   00000000
 // 000   000  000   000  000      000   000  000   000
 // 00000000   000   000  000      000000000  0000000
@@ -935,7 +1007,7 @@ void sdCol(vec3 c, float d) { if (d < sdf.dist) { sdf.dist = d; sdf.mat = -2; sd
 //      000  000   000
 // 0000000   0000000
 
-#define MAX_STACK 3
+#define MAX_STACK 4
 int sdStackTop = 0;
 vec3[MAX_STACK] sdStack;
 
@@ -1024,7 +1096,7 @@ float sdCone(vec3 a, float h, float r)
     return dot(vec2(h,r),vec2(p.y,q));
 }
 
-float sdCone(vec3 a, float r1, float r2, float h)
+float sdCone(vec3 a, float h, float r1, float r2)
 {
     vec3 p = sdf.pos-a;
     vec2 q = vec2( length(p.xz), p.y );
@@ -1045,7 +1117,17 @@ float sdCone(vec3 a, vec3 b, float r1, float r2)
     sdf.pos -= a;
     vec3 ndir = normalize(b-a);
     sdf.pos *= alignMatrix(normalize(cross(vy,ndir)), ndir);
-    float d = sdCone(v0, r1, r2, length(b-a));
+    float d = sdCone(v0, length(b-a), r1, r2);
+    sdPop();
+    return d;
+}
+
+float sdCone(pivot p, float h, float r1, float r2)
+{
+    sdPush();
+    sdf.pos -= p.p;
+    sdf.pos *= p.m;
+    float d = sdCone(v0, h, r1, r2);
     sdPop();
     return d;
 }
