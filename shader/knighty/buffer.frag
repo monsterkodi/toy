@@ -19,7 +19,7 @@ LOAD
 
 void initCamera()
 {    
-    initCam(10.0*vy, 80.0, 1.0, -0.4);
+    initCam(5.0*vx+15.0*vy, 80.0, 0.82, -0.2);
     
     save(0,2,vec4(cam.tgt,0));
     save(0,3,vec4(cam.pos,0));

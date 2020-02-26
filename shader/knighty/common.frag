@@ -339,6 +339,7 @@ struct Shadow {
 struct Light {
     vec3   pos;
     vec3   color;
+    float  range;
     float  bright;
     Shadow shadow;
 };
@@ -1108,9 +1109,9 @@ float sdHexagon(vec3 a, vec3 r) // r: (radius, height, bevel)
     return sdHexagon(sdf.pos, a, r);
 }
 
-float sdTorus(vec3 p, vec3 a, vec3 n, float rl, float rs)
+float sdTorus(vec3 a, vec3 n, float rl, float rs)
 {
-    vec3 q = p-a;
+    vec3 q = sdf.pos-a;
     return length(vec2(length(posOnPlane(q, n))-rl,abs(dot(n, q))))-rs;
 }
 
