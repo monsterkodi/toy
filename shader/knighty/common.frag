@@ -1120,7 +1120,7 @@ float sdLink(vec3 p, float le, float r1, float r2)
     return length(vec2(length(q.xy)-r1,q.z)) - r2;
 }
 
-float sdLink(vec3 a, vec3 b, vec3 n, vec3 r, float uvz)
+float sdLink(vec3 a, vec3 b, vec3 n, vec3 r)
 {
     vec3 ab = normalize(b-a);
     float lab = length(ab);
@@ -1128,16 +1128,7 @@ float sdLink(vec3 a, vec3 b, vec3 n, vec3 r, float uvz)
     p *= mat3(cross(n, ab), ab, n); // orientate
     p -= vec3(0,0,clamp(p.z,-r.y, r.y)); // elongate
     vec3 q = vec3(p.x, max(abs(p.y)-lab,0.0), p.z); // stretch up
-    float d = length(vec2(length(q.xy)-r.x,q.z)) - r.z;
-    if (d < sdf.dist && gl.pass == PASS_MARCH)
-    {
-        float uvy = abs(length(q.xy)-r.x)/r.z;
-        if (q.y == 0.0)
-            gl.tuv = vec3(fract(sign(p.x)*p.y/lab), uvy, uvz);
-        else
-            gl.tuv = vec3(fract(sign(p.x)*sign(p.y)*(1.0-acos(dot(normalize(q.xy), vec2(0,1)))/PI2)), uvy, uvz);
-    }
-    return d;
+    return length(vec2(length(q.xy)-r.x,q.z)) - r.z;
 }
 
 void sdAxes(float r)

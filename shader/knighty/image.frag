@@ -7,17 +7,11 @@ Mat[6] material = Mat[6](
     Mat(HUE_B, 1.0,  0.7,   0.8,  0.4,  0.1,   0.0  ), // body
     Mat(0.5,   0.0,  0.05,  1.0,  0.0,  0.3,   0.0  ), // shoe 
     Mat(0.2,   0.5,  0.9,   0.5,  0.0,  0.5,   0.0  ), // skin
-    Mat(0.5,   0.0,  0.01,  0.0,  0.0,  0.9,   0.0  ), // phone 
+    Mat(HUE_R, 0.9,  0.2,   0.5,  0.0,  0.0,   0.0  ), // cap
     Mat(0.5,   0.0,  1.0,   0.0,  0.0,  0.0,   1.0  )
 );
 
-// 000   000  000   000  000   0000000   000   000  000000000  
-// 000  000   0000  000  000  000        000   000     000     
-// 0000000    000 0 000  000  000  0000  000000000     000     
-// 000  000   000  0000  000  000   000  000   000     000     
-// 000   000  000   000  000   0000000   000   000     000     
-
-void knight()
+void guy()
 {
     sdPush();
     
@@ -77,10 +71,9 @@ void knight()
     
     body = 15.0*vy;
     d = sdSphere(body, 7.0);
-    d = opUnion(d, sdSphere(body +2.5*vx + 3.0*vy + 2.0*vz, 3.5), 2.0); // chest
-    d = opInter(d, sdPlane (body -3.0*vz, normal(0.0,1.0,-1.0)), 1.0); // back cutoff
-    d = opUnion(d, sdSphere(body +2.0*vx -5.0*vy -2.0*vz, 3.0), 2.0); // ass
-    d = opUnion(d, sdSphere(body         -6.0*vy +3.8*vz, 1.0), 2.0); // crotch
+    d = opInter(d, sdPlane (body -3.0*vz, normal(0.0,1.0,-0.5)), 1.0);  // trousers cutoff
+    d = opUnion(d, sdSphere(body +2.0*vx -5.0*vy -2.0*vz, 3.0), 2.0);   // ass
+    d = opUnion(d, sdSphere(body         -6.0*vy +3.8*vz, 1.0), 2.0);   // crotch
     
     leg  = body +3.0*vx -8.0*vy + 1.0*vz;
     foot = leg  +1.0*vx -5.0*vy - 1.1*vz;
@@ -92,21 +85,27 @@ void knight()
     sdUni(2, sdCone(foot, toe, 2.0, 1.0), 0.1); // shoe
     
     arm  = body + 6.0*vx + 3.0*vy - 2.0*vz;
-    elle = arm + 5.0*vx  - 5.0*vy +     vz;
+    elle = arm  + 5.0*vx - 5.0*vy +     vz;
     hand = elle - 1.0*vx          + 6.0*vz;
-    d = sdCapsule(body, body+2.0*vy-1.5*vz, 6.0);  // shoulder
-    d = opUnion(d, sdCone(arm,  elle, 3.5, 1.5), 1.0); // arm
+    d = sdCone(arm,  elle, 3.5, 1.5); // arm
     d = opUnion(d, sdCone(elle, hand, 2.5, 1.5), 1.0); 
     d = opUnion(d, sdSphere(hand+vz, 2.6), 0.5); 
     
-    sdMat(3, d);
     sdPop();
+    
+    head = body +11.0*vy+3.0*vx+2.0*vz;
+    d = opUnion(d, sdSphere(head, 4.5), 2.0);
+    
+    sdMat(3, d);
     
     vec3 phup = normal(-0.5,1.0,-0.5);
     sdMat(2, sdBox(hand+3.0*vz+1.0*vx+vy, normalize(cross(vy,phup)), phup, vec3(2.5,0.6,4.5), 0.6));
     
     hand.x = -hand.x;
-    sdMat(0, sdCapsule(hand-4.0*vx+2.0*vz+2.0*2.0*vy, hand+3.0*vx-1.5*vy+0.5*vz, 0.8));
+    sdMat(0, sdCapsule(hand-4.0*vx+2.0*vz+4.0*vy, hand+3.0*vx-1.5*vy+0.5*vz, 0.8));
+    
+    sdMat(4, sdCapsule(body, body+2.0*vy-1.5*vz, 6.6));
+    sdMat(4, sdHalfSphere(head, vy, 5.0, 1.0));
 }
 
 // 00     00   0000000   00000000   
@@ -119,9 +118,9 @@ float map(vec3 p)
 {
     sdStart(p);
     
-    knight();
+    guy();
     sdFlex(vec3(0.04), 0.0);
-    sdAxes(0.1);
+    // sdAxes(0.1);
     
     if (false && gl.pass != PASS_SHADOW)
     {
