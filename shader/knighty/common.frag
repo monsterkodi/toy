@@ -1,9 +1,9 @@
 /*
- 0000000   0000000   00     00  00     00   0000000   000   000    
-000       000   000  000   000  000   000  000   000  0000  000    
-000       000   000  000000000  000000000  000   000  000 0 000    
-000       000   000  000 0 000  000 0 000  000   000  000  0000    
- 0000000   0000000   000   000  000   000   0000000   000   000    
+ 0000000   0000000   00     00  00     00   0000000   000   000
+000       000   000  000   000  000   000  000   000  0000  000
+000       000   000  000000000  000000000  000   000  000 0 000
+000       000   000  000 0 000  000 0 000  000   000  000  0000
+ 0000000   0000000   000   000  000   000   0000000   000   000
 */
 
 #define KEYS \
@@ -13,7 +13,7 @@ bool keyDown(int key)   { return keys(key, 0).x > 0.5; }
 
 #define LOAD \
 vec4 load(int x, int y) { return texelFetch(iChannel1, ivec2(x,y), 0); } \
-void save(int x, int y, vec4 c) { if ((gl.ifrag.x==x) && (gl.ifrag.y==y)) gl.color=c; } 
+void save(int x, int y, vec4 c) { if ((gl.ifrag.x==x) && (gl.ifrag.y==y)) gl.color=c; }
 
 // 000   000   0000000   00000000   00     00   0000000   000
 // 0000  000  000   000  000   000  000   000  000   000  000
@@ -68,11 +68,11 @@ void march(vec3 ro, vec2 uv)                           \
     gl.hit.dist = gl.maxDist;                          \
 }
 
-//  0000000    0000000   0000000  000      000   000   0000000  000   0000000   000   000  
-// 000   000  000       000       000      000   000  000       000  000   000  0000  000  
-// 000   000  000       000       000      000   000  0000000   000  000   000  000 0 000  
-// 000   000  000       000       000      000   000       000  000  000   000  000  0000  
-//  0000000    0000000   0000000  0000000   0000000   0000000   000   0000000   000   000  
+//  0000000    0000000   0000000  000      000   000   0000000  000   0000000   000   000
+// 000   000  000       000       000      000   000  000       000  000   000  0000  000
+// 000   000  000       000       000      000   000  0000000   000  000   000  000 0 000
+// 000   000  000       000       000      000   000       000  000  000   000  000  0000
+//  0000000    0000000   0000000  0000000   0000000   0000000   000   0000000   000   000
 
 #define OCCLUSION \
 float occlusion(vec3 p, vec3 n)                          \
@@ -90,11 +90,11 @@ float occlusion(vec3 p, vec3 n)                          \
     return f*f;                                          \
 }
 
-//  0000000  000   000   0000000   0000000     0000000   000   000  
-// 000       000   000  000   000  000   000  000   000  000 0 000  
-// 0000000   000000000  000000000  000   000  000   000  000000000  
-//      000  000   000  000   000  000   000  000   000  000   000  
-// 0000000   000   000  000   000  0000000     0000000   00     00  
+//  0000000  000   000   0000000   0000000     0000000   000   000
+// 000       000   000  000   000  000   000  000   000  000 0 000
+// 0000000   000000000  000000000  000   000  000   000  000000000
+//      000  000   000  000   000  000   000  000   000  000   000
+// 0000000   000   000  000   000  0000000     0000000   00     00
 
 #define SHADOW \
 float shadow(vec3 ro, vec3 n, int lid)                   \
@@ -150,7 +150,7 @@ float shadow(vec3 ro, vec3 n, int lid)                   \
     SHADOW     \
     OCCLUSION  \
     LIGHT      \
-    
+
 #define FOOTER \
     PRE_MAIN   \
     void mainImage(out vec4 fragColor, in vec2 fragCoord) \
@@ -173,7 +173,7 @@ float shadow(vec3 ro, vec3 n, int lid)                   \
         /*HELP*/   \
         POST       \
     }
-    
+
 #define PI   3.141592653589
 #define PI2  1.570796326795
 #define TAU  6.283185307178
@@ -380,16 +380,16 @@ struct SDF {
     int   mat;
 } sdf;
 
-// 00000000  000   000  000   000  
-// 000       0000  000  000   000  
-// 0000000   000 0 000   000 000   
-// 000       000  0000     000     
-// 00000000  000   000      0      
+// 00000000  000   000  000   000
+// 000       0000  000  000   000
+// 0000000   000 0 000   000 000
+// 000       000  0000     000
+// 00000000  000   000      0
 
 struct Env {
     float gloss;   // strength of glossy
     float specs;   // size of glossy
-    vec3  ambient; 
+    vec3  ambient;
 } env;
 
 //  0000000   000       0000000   0000000     0000000   000
@@ -417,7 +417,7 @@ struct Global {
     int    maxSteps;
     float  minDist;
     float  maxDist;
-    Light[3] light; 
+    Light[3] light;
     SDF      hit;
 } gl;
 
@@ -430,7 +430,7 @@ struct Global {
 #define INIT \
     OPTIONS \
     initGlobal(fragCoord, iResolution, iMouse, iTime, iFrame); \
-    lookAtFrom(load(0,2).xyz, load(0,3).xyz); 
+    lookAtFrom(load(0,2).xyz, load(0,3).xyz);
 
 void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int frame)
 {
@@ -476,6 +476,8 @@ void initGlobal(vec2 fragCoord, vec3 resolution, vec4 mouse, float time, int fra
 
 float iRange(float l, float h, float f) { return l+(h-l)*(opt.anim ? 1.0-(cos(gl.time*f)*0.5+0.5) : 0.0); }
 float iRange(float l, float h) { return iRange(l, h, 1.0); }
+
+float iSawtooth(float l, float h, float f) { return l+(h-l)*(opt.anim ? abs(fract(gl.time*f)*2.0-1.0):0.0); }
 
 void sdStart(vec3 p)
 {
@@ -563,12 +565,12 @@ float print(int x, int y, bool v)  { return print(ivec2(x,y), float(v)); }
     float[4] vs = float[4](v0,v1,v2,v3); \
     for (int i = gl.zero; i<4; i++)      \
         {col = mix(col, cs[i], print(-2, y, vs[i] )); y++;}
-                
-// 000  000   000  00000000   0000000   
-// 000  0000  000  000       000   000  
-// 000  000 0 000  000000    000   000  
-// 000  000  0000  000       000   000  
-// 000  000   000  000        0000000   
+
+// 000  000   000  00000000   0000000
+// 000  0000  000  000       000   000
+// 000  000 0 000  000000    000   000
+// 000  000  0000  000       000   000
+// 000  000   000  000        0000000
 
 #define INFO \
     if (opt.info && gl.ifrag.x < 9*text.size.x && gl.ifrag.y > gl.ires.y-10*text.size.y) \
@@ -594,7 +596,7 @@ float print(int x, int y, bool v)  { return print(ivec2(x,y), float(v)); }
                        blue,  gl.hit.pos.z);   \
             }                                  \
         }                                      \
-    }                                          
+    }
 
 #define printOpt(o,k,c1,c2,c3,c4)                       \
     iv = int[6](k, 32, c1, c2+32, c3+32, c4+32);        \
@@ -602,12 +604,12 @@ float print(int x, int y, bool v)  { return print(ivec2(x,y), float(v)); }
     for (int i = gl.zero; i<6; i++)                     \
         col = mix(col, ct, print(ivec2(i+1,y), iv[i])); \
     y++
-    
-// 000   000  00000000  000      00000000   
-// 000   000  000       000      000   000  
-// 000000000  0000000   000      00000000   
-// 000   000  000       000      000        
-// 000   000  00000000  0000000  000        
+
+// 000   000  00000000  000      00000000
+// 000   000  000       000      000   000
+// 000000000  0000000   000      00000000
+// 000   000  000       000      000
+// 000   000  00000000  0000000  000
 
 #define HELP \
     if (opt.help && gl.ifrag.x < 9*text.size.x && gl.ifrag.y <= gl.ires.y-10*text.size.y) \
@@ -785,43 +787,40 @@ vec3 rotZ(vec3 v, float d)
     return vec3(v.x*c+v.y*s, v.y*c+v.x*s, v.z);
 }
 
-// 00000000   000  000   000   0000000   000000000  
-// 000   000  000  000   000  000   000     000     
-// 00000000   000   000 000   000   000     000     
-// 000        000     000     000   000     000     
-// 000        000      0       0000000      000     
+// 00000000   000  000   000   0000000   000000000
+// 000   000  000  000   000  000   000     000
+// 00000000   000   000 000   000   000     000
+// 000        000     000     000   000     000
+// 000        000      0       0000000      000
 
 struct pivot {
     vec3 p;
-    vec3 x;
-    vec3 y;
-    vec3 z;
     mat3 m;
 };
 
-#define pivot0  pivot(v0,vx,vy,vz,mat3(1,0,0,0,1,0,0,0,1))
+#define pivot0  pivot(v0,mat3(1,0,0,0,1,0,0,0,1))
 
-// 00000000  000   000  000      00000000  00000000   
-// 000       000   000  000      000       000   000  
-// 0000000   000   000  000      0000000   0000000    
-// 000       000   000  000      000       000   000  
-// 00000000   0000000   0000000  00000000  000   000  
+// 00000000  000   000  000      00000000  00000000
+// 000       000   000  000      000       000   000
+// 0000000   000   000  000      0000000   0000000
+// 000       000   000  000      000       000   000
+// 00000000   0000000   0000000  00000000  000   000
 
-mat3 rMatX(float x)
+mat3 eulerX(float x)
 {
      float r = deg2rad(x);
      float c = cos(r), s = sin(r);
      return mat3(1,0,0,0,c,-s,0,s,c);
 }
 
-mat3 rMatY(float y)
+mat3 eulerY(float y)
 {
      float r = deg2rad(y);
      float c = cos(r), s = sin(r);
      return mat3(c,0,s,0,1,0,-s,0,c);
 }
 
-mat3 rMatZ(float z)
+mat3 eulerZ(float z)
 {
      float r = deg2rad(z);
      float c = cos(r), s = sin(r);
@@ -830,31 +829,37 @@ mat3 rMatZ(float z)
 
 mat3 euler(float x, float y, float z)
 {
-    return rMatY(y) * rMatX(x) * rMatZ(z);
+    return eulerY(y) * eulerX(x) * eulerZ(z);
 }
 
-void eulerPivot(inout pivot p, float x, float y, float z)
+mat3 eulerXY(float x, float y)
 {
-    p.m = euler(x,y,z);
-    p.x = p.m * vx;
-    p.y = p.m * vy;
-    p.z = p.m * vz;
+    return eulerY(y) * eulerX(x);
+}
+
+mat3 eulerYZ(float y, float z)
+{
+    return eulerY(y) * eulerZ(z);
+}
+
+mat3 eulerZX(float z, float x)
+{
+    return eulerZ(z) * eulerX(x);
+}
+
+mat3 eulerZY(float z, float y)
+{
+    return eulerZ(z) * eulerY(y);
 }
 
 void concatPivotXY(inout pivot p, pivot o, float x, float y)
 {
-    p.m = o.m * euler(x,y,0.0);
-    p.x = p.m * vx;
-    p.y = p.m * vy;
-    p.z = p.m * vz;
+    p.m = o.m * eulerY(y) * eulerX(x);
 }
 
 void concatPivotYZ(inout pivot p, pivot o, float y, float z)
 {
-    p.m = o.m * euler(0.0,y,z);
-    p.x = p.m * vx;
-    p.y = p.m * vy;
-    p.z = p.m * vz;
+    p.m = o.m * eulerY(y) * eulerZ(z);
 }
 
 // 00000000    0000000   000       0000000   00000000
@@ -1100,14 +1105,14 @@ float sdCone(vec3 a, float h, float r1, float r2)
 {
     vec3 p = sdf.pos-a;
     vec2 q = vec2( length(p.xz), p.y );
-    
+
     float b = (r1-r2)/h;
     float c = sqrt(1.0-b*b);
     float k = dot(q,vec2(-b,c));
-      
+
     if( k < 0.0 ) return length(q) - r1;
     if( k > c*h ) return length(q-vec2(0.0,h)) - r2;
-          
+
     return dot(q, vec2(c,b) ) - r1;
 }
 
@@ -1122,7 +1127,7 @@ float sdCone(vec3 a, vec3 b, float r1, float r2)
     return d;
 }
 
-float sdCone(pivot p, float h, float r1, float r2)
+float sdCone(in pivot p, float h, float r1, float r2)
 {
     sdPush();
     sdf.pos -= p.p;
@@ -1229,7 +1234,7 @@ void sdFloor(vec3 color, float h)
 
 void sdFlex(vec3 color, float h)
 {
-    if (cam.pos.y > h) 
+    if (cam.pos.y > h)
     {
         vec3 pp = vy*h;
         float d = sdPlane(pp, vy);
@@ -1306,8 +1311,8 @@ void lookPitch(float ang) {
     cam.up      = normalize(cross(cam.rgt,cam.dir));
 }
 
-void lookZoom(float z) 
-{ 
+void lookZoom(float z)
+{
     if (z == 0.0)
     {
         cam.tgt = cam.pos + normalize(cam.pos2tgt)*1.0;
