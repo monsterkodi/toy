@@ -139,6 +139,88 @@ float shadow(vec3 ro, vec3 n, int lid)                   \
     return dark + shade * (1.0-dark);                    \
 }
 
+// 000      000   0000000   000   000  000000000
+// 000      000  000        000   000     000
+// 000      000  000  0000  000000000     000
+// 000      000  000   000  000   000     000
+// 0000000  000   0000000   000   000     000
+
+#define LIGHT \
+vec3 calcLight(vec3 p, vec3 n)                           \
+{                                                        \
+    vec3 col;                                            \
+    Mat  mat;                                            \
+    switch (gl.hit.mat)                                  \
+    {                                                    \
+        case -2: col = gl.hit.color; break;              \
+        case NONE:                                       \
+        {                                                \
+           vec2   guv = gl.frag.xy - gl.res / 2.;        \
+           float  grid = dot(step(mod(guv.xyxy, vec4(10,10,100,100)), vec4(1)), vec4(.5, .5, 1, 1)); \
+           return mix(vec3(.001), vec3(0.01,0.01,0.01), grid); \
+        }                                                \
+        default:                                         \
+        {                                                \
+            mat = material[gl.hit.mat];                  \
+            col = hsl(mat.hue, mat.sat, mat.lum);        \
+        }                                                \
+    }                                                    \
+    col = (opt.colors) ? desat(col) : col;               \
+    if (opt.normal || opt.depthb)                        \
+    {                                                    \
+        vec3 nc = opt.normal ? gl.hit.dist >= gl.maxDist ? black : n : white; \
+        vec3 zc = opt.depthb ? vec3(pow(1.0-gl.hit.dist/gl.maxDist, 4.0)) : white; \
+        col = nc*zc;                                     \
+    }                                                    \
+    else                                                 \
+    {                                                    \
+        vec3 sum   = v0;                                 \
+        vec3 gloss = v0;                                 \
+        float bsum = 0.0;                                \
+        float mbr  = 0.0;                                \
+        float occl = occlusion(p,n);                     \
+        for (int i = gl.zero; i < 3; i++)                \
+        {                                                \
+            vec3  pl  = gl.light[i].pos-p;               \
+            float br  = gl.light[i].bright * (gl.light[i].range>0.0 ? pow(clamp01(1.0-length(pl)/gl.light[i].range), 2.0) : 1.0); \
+            vec3  ld  = normalize(pl);                   \
+            vec3  vn  = normalize(ld-cam.dir);           \
+            float shd = i == 0 ? shadow(p,n,i) : 1.0;    \
+            float dvn = dot(n,vn);                       \
+            float dld = dot(n,ld);                       \
+            float dcd = dot(n,-cam.dir);                 \
+                                                         \
+            gloss += gl.light[i].bright*gl.light[i].color*mix(mat.glossy*0.1,pow(mat.glossy,4.0),mat.glossy)*pow(smoothstep( \
+                mat.glossy*(0.992-env.specs*0.6*0.01),   \
+                1.0-env.specs*0.45*0.01, dvn),           \
+                4.0+36.0*mat.glossy);                    \
+                                                         \
+            float shiny, metal;                          \
+                                                         \
+            shiny  = pow(dld*dld, 5.0);                  \
+            shiny += pow(dvn,2.0)*0.2;                   \
+            shiny += pow(1.0-dcd, 2.0);                  \
+                                                         \
+            metal  = smoothstep(mat.metal*0.5, 0.52, dot(n,normalize(vy+ld)));           \
+                                                                                         \
+            float shf = 1.0-mat.shiny*(1.0-shiny);                                       \
+            float mtf = 1.0-mat.metal*(1.0-metal);                                       \
+                                                                                         \
+            sum  += gl.light[i].color * (max(dld,0.0) * br * shd * occl * shf * mtf);    \
+                                                                                         \
+            bsum += gl.light[i].bright;                                                  \
+            mbr = max(mbr, gl.light[i].bright);                                          \
+        }                                                                                \
+        sum /= bsum/mbr;                                                                 \
+                                                                                         \
+        col = mix(col * sum, col, mat.emit);                                             \
+        col += gloss*env.gloss;                                                          \
+                                                                                         \
+        col = max(col, env.ambient);                                                     \
+    }                                                                                    \
+    return col;                                                                          \
+}
+
 #define HEADER \
     KEYS       \
     LOAD       \
@@ -151,25 +233,14 @@ float shadow(vec3 ro, vec3 n, int lid)                   \
     OCCLUSION  \
     LIGHT      \
 
-#define FOOTER \
-    PRE_MAIN   \
-    void mainImage(out vec4 fragColor, in vec2 fragCoord) \
-    {              \
-        INIT       \
-        CALC       \
-        INFO       \
-        /*HELP*/   \
-        POST       \
-    }
-
 #define SETUP \
-    /*PRE_MAIN*/   \
+    PRE_MAIN  \
     void mainImage(out vec4 fragColor, in vec2 fragCoord) \
     {              \
         INIT       \
         setup();   \
         CALC       \
-        INFO       \
+        /*INFO*/   \
         /*HELP*/   \
         POST       \
     }
@@ -291,7 +362,7 @@ struct Opt {
 } opt;
 
 #define OPTIONS \
-    opt.rotate   = !keyState(KEY_R);      \
+    opt.rotate   =  keyState(KEY_R);      \
     opt.axes     = !keyState(KEY_X);      \
     opt.info     =  keyState(KEY_I);      \
     opt.help     =  keyState(KEY_H);      \
@@ -1364,7 +1435,7 @@ void initCam(vec3 lookAt, float dist, float rotx, float roty)
 vec4 postProc(vec3 col, bool dither, bool gamma, bool vignette)
 {
     if (dither)   col -= vec3(gradientNoise(gl.frag)/256.0);
-    if (gamma)    col  = pow(col, vec3(1.0/2.2));
+    col  = pow(col, vec3(1.0/(gamma ? 1.8 : 2.2)));
     if (vignette) col *= vec3(smoothstep(1.8, 0.5, length(gl.uv)/max(gl.aspect,1.0)));
     return vec4(col, 1.0);
 }
