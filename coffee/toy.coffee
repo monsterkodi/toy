@@ -68,7 +68,8 @@ class Toy
         # @load 'snowmobile'
         # @load 'common'
         # @load 'skull'
-        @load 'knighty'
+        # @load 'knighty'
+        @load 'konrad'
 
     # 00000000   00000000  000   000  0000000    00000000  00000000   
     # 000   000  000       0000  000  000   000  000       000   000  
